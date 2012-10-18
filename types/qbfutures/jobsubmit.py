@@ -9,8 +9,7 @@
 
 import sys, os
 import optparse
-if os.environ.has_key('QBDIR'):
-    sys.path.append('%s/api/python' % os.environ['QBDIR'])
+
 import qb
 
 
@@ -32,9 +31,9 @@ def main():
 
     # Build the job
     job = {}
-    job['name'] = 'python test job'
+    job['name'] = 'QBFutures Test Job'
     job['cpus'] = options.subjobs
-    job['prototype'] = 'pyframe'
+    job['prototype'] = 'qbfutures'
     #job['requirements'] = 'host.os=linux'
 
     # This job type has only one package variable
