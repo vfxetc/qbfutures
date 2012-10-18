@@ -100,8 +100,6 @@ def main():
     jobObject = initJob()
     state    = executeJob(jobObject)
     cleanupJob(jobObject, state)
-    
 
-if __name__ == "__main__":
-    main()
+
 

@@ -35,7 +35,8 @@ def main():
     job['cpus'] = options.subjobs
     job['prototype'] = 'qbfutures'
     #job['requirements'] = 'host.os=linux'
-
+    job['env'] = dict(os.environ)
+    
     # This job type has only one package variable
     package = {}
     job['package'] = package
@@ -51,6 +52,7 @@ def main():
     if options.archive != '':
         # Use this option to use the bootstrap.py shortcircuit for development
         qb.archivejob(options.archive, job)
+    
     else:
         # Submit the job to the Supervisor
         submittedJobs = qb.submit([job])    
