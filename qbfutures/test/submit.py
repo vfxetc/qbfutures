@@ -10,5 +10,5 @@ print future
 print future.result()
 print
 
-for x in Executor().map('qbfutures.test.work:func', range(3)):
+for x in Executor().map('qbfutures.test.work:func', xrange(40)):
     print x

@@ -79,9 +79,9 @@ class _Poller(threading.Thread):
                 self.delay = self.MAX_DELAY
                 continue
             
-            #print 'QUICK POLL'
+            # print 'QUICK POLL: %r' % self.futures.keys()
             jobs = qb.jobinfo(id=[f.job_id for f in self.futures.itervalues()], agenda=not self.two_stage_polling)
-            #print 'done quick poll'
+            # print 'done quick poll'
             
             if self.two_stage_polling:
                 finished = [job['id'] for job in jobs if job['status'] in ('complete', 'failed')]
@@ -92,8 +92,6 @@ class _Poller(threading.Thread):
                 #print 'done long poll'
             
             for job in jobs:
-                if job['status'] not in ('complete', 'failed'):
-                    continue
                 for agenda_i, agenda in enumerate(job['agenda']):
                     if agenda['status'] not in ('complete', 'failed'):
                         continue
@@ -103,7 +101,7 @@ class _Poller(threading.Thread):
                         continue
                         
                     result = utils.unpack(agenda['resultpackage'])
-                    # print 'result: %r' % result
+                    # print 'RESULT: %r' % result
                     
                     if 'result' in result:
                         future.set_result(result['result'])
