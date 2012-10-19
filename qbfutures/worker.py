@@ -64,11 +64,11 @@ def main():
             pickle.dump(job, request_fh, -1)
             pickle.dump(agenda, request_fh, -1)
         
-        proc.wait()
-        
-        fcntl.fcntl(response_pipe[0], fcntl.F_SETFL, os.O_NONBLOCK)
+        # fcntl.fcntl(response_pipe[0], fcntl.F_SETFL, os.O_NONBLOCK)
         with os.fdopen(response_pipe[0], 'r') as response_fh:
             package = pickle.load(response_fh)
+        
+        proc.wait()
         
         agenda['resultpackage'] = package
         agenda['status'] = package.get('status', 'failed')
