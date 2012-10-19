@@ -5,7 +5,5 @@ from .work import func
 
 import qb
 
-future = Executor().submit('qbfutures.test.work:func', 1, 2, 3)
-print future
-print future.id
-print future.status()
+for x in Executor().map('qbfutures.test.work:func', range(3)):
+    print x

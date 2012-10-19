@@ -4,6 +4,7 @@ import subprocess
 import sys
 import time
 import traceback
+import cPickle as pickle
 
 import qb
 
@@ -17,6 +18,7 @@ def initJob():
 
 
 def executeJob(job):
+    
     jobstate = 'complete'
 
     # The request work/execute/report work loop
@@ -33,7 +35,6 @@ def executeJob(job):
             # pending -- preempted, so bail out
             # blocked -- perhaps item is part of a dependency
             jobstate = agenda['status']
-            # print 'job %s state is now %s' % (job['id'], jobstate)
             break
         
         # Waiting; relatively rare, try again shortly.
@@ -47,9 +48,12 @@ def executeJob(job):
         print '%s BEGIN %04d %s' % ('='*20, int(agenda['name']), '='*20)
 
         # Assemble the command to execute
-        func = job['package']['func']
-        args = job['package']['args'] or ()
-        kwargs = job['package']['kwargs'] or {}
+        package = job['package']
+        if '__pickle__' in package:
+            package = pickle.loads(package['__pickle__'].decode('base64'))
+        func = package['func']
+        args = package['args'] or ()
+        kwargs = package['kwargs'] or {}
         
         print 'func:', repr(func)
         print 'args:', repr(args)
@@ -68,6 +72,9 @@ def executeJob(job):
             agenda['resultpackage'] = {'exception': e}
             agenda['status'] = 'failed'
             traceback.print_exc()
+        
+        if agenda['resultpackage']:
+            agenda['resultpackage']['__pickle__'] = pickle.dumps(agenda['resultpackage']).encode('base64')
         
         print agenda['resultpackage']
         print '---'
