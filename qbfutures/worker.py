@@ -20,6 +20,9 @@ debug = 'DEBUG' in os.environ
 def main():
     
     job = {} if debug else qb.jobobj()
+    job_for_child = dict(job)
+    job_for_child.pop('agenda', None)
+    
     jobstate = 'complete'
 
     # The request work/execute/report work loop
@@ -68,7 +71,7 @@ def main():
         
         # Send the job and agenda to the child.
         with os.fdopen(request_pipe[1], 'w') as request_fh:
-            pickle.dump(job, request_fh, -1)
+            pickle.dump(job_for_child, request_fh, -1)
             pickle.dump(agenda, request_fh, -1)
         
         # Get the response from the child.
@@ -100,20 +103,19 @@ def main():
 
 if __name__ == '__main__':
     # print 'EXECUTE'
-
+    
     request_pipe, response_pipe = [int(x) for x in sys.argv[1:3]]
     request_fh = os.fdopen(request_pipe, 'r')
     response_fh = os.fdopen(response_pipe, 'w')
     
+    # Just in case someone calls `exit()` which won't be caught below.
     package = {'status': 'failed'}
     
     try:
-                
+        
+        # Get the job/agenda from the parent.
         job = pickle.load(request_fh)
         agenda = pickle.load(request_fh)
-    
-        # print 'JOB: %r' % job
-        # print 'AGENDA: %r' % agenda
     
         # Assemble the command to execute
         package = utils.unpack(agenda['package'])
@@ -123,7 +125,8 @@ if __name__ == '__main__':
         
         arg_spec = ', '.join([repr(x) for x in args] + ['%s=%r' % x for x in sorted(kwargs.iteritems())])
         print '# qbfutures: calling %s(%s)' % (func, arg_spec)
-    
+        
+        # If given an entrypoint-like string, parse it and import the function.
         if isinstance(func, basestring):
             mod_name, func_name = func.split(':')
             mod = __import__(mod_name, fromlist=['.'])
@@ -133,9 +136,7 @@ if __name__ == '__main__':
             'result': func(*args, **kwargs),
             'status': 'complete',
         }
-    
-        pickle.dump(utils.pack(package), response_fh, -1)
-    
+        
     except Exception as e:
         package = {
             'exception': e,
@@ -143,8 +144,11 @@ if __name__ == '__main__':
         }
     
     finally:
-        request_fh.close()
+
+        # Send the results to the child.
         pickle.dump(utils.pack(package), response_fh, -1)
+
+        request_fh.close()
         response_fh.close()
     
     # print 'DONE child'
