@@ -2,10 +2,13 @@ import threading
 import os
 import socket
 import cPickle as pickle
+import time
 
 from concurrent.futures import _base
 
 import qb
+
+from . import utils
 
 
 FINISHED = set(('complete', 'pending', 'blocked'))
@@ -13,17 +16,20 @@ FINISHED = set(('complete', 'pending', 'blocked'))
 
 class Future(_base.Future):
     
-    def __init__(self):
+    def __init__(self, job_id, agenda_id):
         super(Future, self).__init__()
-        self._id = None
+        self.job_id = job_id
+        self.agenda_id = agenda_id
     
-    @property
-    def id(self):
-        return self._id
+    def __repr__(self):
+        res = super(Future, self).__repr__()
+        if res.startswith('<Future '):
+            res = ('<qbfutures.Future %d:%d ' % (self.job_id, self.agenda_id)) + res[8:]
+        return res
     
     def status(self):
-        job = qb.jobinfo(id=self._id, fields=['status'])
-        return job[0]['status']
+        job = qb.jobinfo(id=[self.job_id], agenda=True)
+        return job[0]['agenda'][self.agenda_id]['status']
 
 
 class _Poller(threading.Thread):
@@ -51,7 +57,9 @@ class _Poller(threading.Thread):
         self._started = False
     
     def add(self, future):
-        self.futures[future.id] = future
+        self.futures[(future.job_id, future.agenda_id)] = future
+    
+    def trigger(self):
         self.delay = self.MIN_DELAY
         self.loop_event.set()
         if not self._started:
@@ -73,7 +81,7 @@ class _Poller(threading.Thread):
                 continue
             
             #print 'QUICK POLL'
-            jobs = qb.jobinfo(id=self.futures.keys(), agenda=not self.two_stage_polling)
+            jobs = qb.jobinfo(id=[f.job_id for f in self.futures.itervalues()], agenda=not self.two_stage_polling)
             #print 'done quick poll'
             
             if self.two_stage_polling:
@@ -87,12 +95,14 @@ class _Poller(threading.Thread):
             for job in jobs:
                 if job['status'] not in ('complete', 'failed'):
                     continue
-                future = self.futures.pop(job['id'], None)
-                if future is None:
-                    continue
-                agenda = job['agenda'][0]
-                if agenda['status'] in ('complete', 'failed'):
+                for agenda_i, agenda in enumerate(job['agenda']):
+                    if agenda['status'] not in ('complete', 'failed'):
+                        continue
                     
+                    future = self.futures.pop((job['id'], agenda_i), None)
+                    if future is None:
+                        continue
+                        
                     result = agenda['resultpackage'] or {}
                     if '__pickle__' in result:
                         result = pickle.loads(result['__pickle__'].decode('base64'))
@@ -111,32 +121,78 @@ class Executor(_base.Executor):
     def __init__(self):
         super(Executor, self).__init__()
     
-    def submit(self, func, *args, **kwargs):
-        
+    def _base_job(self, func, name=None, cpus=1, **kwargs):
         job = {}
         job['prototype'] = 'qbfutures'
-        job['name'] = 'QBFuture: %s' % (func,)
-        
-        job['cpus'] = 1
+        job['name'] = name or 'Python: %s' % (func,)
+        job['cpus'] = cpus or 1
         job['env'] = dict(os.environ)
+        job['agenda'] = []
+        return job
         
-        job['agenda'] = qb.genframes('1')
+    def _submit(self, job):
+        submitted = qb.submit([job])
+        assert len(submitted) == 1
+        futures = []
+        poller = _Poller.instance()
+        for i, agenda in enumerate(job['agenda']):
+            future = Future(submitted[0]['id'], i)
+            poller.add(future)
+            futures.append(future)
+        poller.trigger()
+        return futures
+        
+    def submit(self, func, *args, **kwargs):
+        return self.submit_ext(func, args, kwargs)
+    
+    def map(self, func, *iterables, **kwargs):
+        
+        timeout = kwargs.get('timeout')
+        if timeout is not None:
+            end_time = timeout + time.time()
+        
+        job = self._base_job(func, **kwargs)
+        
+        for i, args in enumerate(zip(*iterables)):
+            agenda = qb.Work()
+            agenda['name'] = str(i + 1)
+            agenda['package'] = utils.pack({
+                'func': func,
+                'args': args,
+            })
+            job['agenda'].append(agenda)
+        
+        futures = self._submit(job)
+        
+        try:
+            for future in futures:
+                if timeout is None:
+                    yield future.result()
+                else:
+                    yield future.result(end_time - time.time())
+        finally:
+            for future in futures:
+                future.cancel()
+    
+    def submit_ext(self, func, args, kwargs, **ext_kwargs):
         
         
-        job['package'] = {
+        job = self._base_job(func, **ext_kwargs)
+        
+        
+        agenda = qb.Work()
+        agenda['name'] = '1'
+        agenda['package'] = utils.pack({
             'func': func,
             'args': args,
             'kwargs': kwargs,
-        }
-        job['package']['__pickle__'] = pickle.dumps(job['package']).encode('base64')
+        })
         
-        submitted = qb.submit([job])
-        assert len(submitted) == 1
+        job['agenda'] = [agenda]
         
-        future = Future()
-        future._id = submitted[0]['id']
-        _Poller.instance().add(future)
-        return future
+        return self._submit(job)[0]
+        
     
-        
+
+
         

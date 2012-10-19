@@ -1,6 +1,6 @@
 
 def func(*args, **kwargs):
     print 'Running the callback with', args, kwargs
-    return sum(args)
+    return args
 
 

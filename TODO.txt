@@ -1,0 +1,3 @@
+- Executor.map does one job with each item as a seperate agenda piece
+    - Future needs a job_id, agenda_id
+- Executor.submit_ext(func, args, kwargs, name, ...) for more control

@@ -8,6 +8,8 @@ import cPickle as pickle
 
 import qb
 
+from . import utils
+
 
 def initJob():
     job = qb.jobobj()
@@ -45,15 +47,13 @@ def executeJob(job):
             continue
 
         # == Running, so execute now ==
-        print '%s BEGIN %04d %s' % ('='*20, int(agenda['name']), '='*20)
+        print '%s BEGIN %s %s' % ('='*20, agenda['name'], '='*20)
 
         # Assemble the command to execute
-        package = job['package']
-        if '__pickle__' in package:
-            package = pickle.loads(package['__pickle__'].decode('base64'))
+        package = utils.unpack(agenda['package'])
         func = package['func']
-        args = package['args'] or ()
-        kwargs = package['kwargs'] or {}
+        args = package.get('args') or ()
+        kwargs = package.get('kwargs') or {}
         
         print 'func:', repr(func)
         print 'args:', repr(args)
@@ -66,23 +66,20 @@ def executeJob(job):
                 mod_name, func_name = func.split(':')
                 mod = __import__(mod_name, fromlist=['.'])
                 func = getattr(mod, func_name)
-            agenda['resultpackage'] = {'result': func(*args, **kwargs)}
+            agenda['resultpackage'] = utils.pack({'result': func(*args, **kwargs)})
             agenda['status'] = 'complete'
         except Exception as e:
-            agenda['resultpackage'] = {'exception': e}
+            agenda['resultpackage'] = utils.pack({'exception': e})
             agenda['status'] = 'failed'
             traceback.print_exc()
-        
-        if agenda['resultpackage']:
-            agenda['resultpackage']['__pickle__'] = pickle.dumps(agenda['resultpackage']).encode('base64')
-        
+                
         print agenda['resultpackage']
         print '---'
         
         # Report back the results to the Supervisor.
         qb.reportwork(agenda)
 
-        print '%s END %04d %s' % ('='*20, int(agenda['name']), '='*20)
+        print '%s END %s %s' % ('='*20, agenda['name'], '='*20)
 
     return jobstate
 
