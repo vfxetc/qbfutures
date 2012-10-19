@@ -143,6 +143,26 @@ class Executor(_base.Executor):
         
     def submit(self, func, *args, **kwargs):
         return self.submit_ext(func, args, kwargs)
+        
+    def submit_ext(self, func, args, kwargs, **ext_kwargs):
+        
+        job = self._base_job(func, **ext_kwargs)
+        
+        package = {'func': func}
+        if args:
+            package['args'] = args
+        if kwargs:
+            package['kwargs'] = kwargs
+        if 'interpreter' in ext_kwargs:
+            package['interpreter'] = ext_kwargs['interpreter']
+        
+        agenda = qb.Work()
+        agenda['name'] = '1'
+        agenda['package'] = utils.pack(package)
+        
+        job['agenda'] = [agenda]
+        
+        return self._submit(job)[0]
     
     def map(self, func, *iterables, **kwargs):
         
@@ -172,26 +192,4 @@ class Executor(_base.Executor):
         finally:
             for future in futures:
                 future.cancel()
-    
-    def submit_ext(self, func, args, kwargs, **ext_kwargs):
-        
-        
-        job = self._base_job(func, **ext_kwargs)
-        
-        
-        agenda = qb.Work()
-        agenda['name'] = '1'
-        agenda['package'] = utils.pack({
-            'func': func,
-            'args': args,
-            'kwargs': kwargs,
-        })
-        
-        job['agenda'] = [agenda]
-        
-        return self._submit(job)[0]
-        
-    
 
-
-        

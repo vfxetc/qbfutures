@@ -7,6 +7,7 @@ import traceback
 import cPickle as pickle
 import os
 import multiprocessing
+import fcntl
 
 import qb
 
@@ -14,7 +15,7 @@ from . import utils
 
 
 
-debug = False
+# debug = True
 
 
 def main():
@@ -62,6 +63,10 @@ def main():
         with os.fdopen(request_pipe[1], 'w') as request_fh:
             pickle.dump(job, request_fh, -1)
             pickle.dump(agenda, request_fh, -1)
+        
+        proc.wait()
+        
+        fcntl.fcntl(response_pipe[0], fcntl.F_SETFL, os.O_NONBLOCK)
         with os.fdopen(response_pipe[0], 'r') as response_fh:
             package = pickle.load(response_fh)
         
@@ -72,8 +77,6 @@ def main():
         
         if not debug:
             qb.reportwork(agenda)
-        
-        proc.wait()
         
         if debug:
             break
