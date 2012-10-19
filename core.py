@@ -3,6 +3,7 @@ import os
 import socket
 import cPickle as pickle
 import time
+import atexit
 
 from concurrent.futures import _base
 
@@ -34,14 +35,6 @@ class Future(_base.Future):
 
 class _Poller(threading.Thread):
     
-    # Singleton method.
-    @classmethod
-    def instance(cls):
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
-    _instance = None
-    
     MIN_DELAY = 0.001
     MAX_DELAY = 2.0
     
@@ -54,7 +47,8 @@ class _Poller(threading.Thread):
         self.futures = {}
         self.delay = self.MAX_DELAY
         self.loop_event = threading.Event()
-        self._started = False
+        self.started = False
+        self.running = True
     
     def add(self, future):
         self.futures[(future.job_id, future.agenda_id)] = future
@@ -62,12 +56,17 @@ class _Poller(threading.Thread):
     def trigger(self):
         self.delay = self.MIN_DELAY
         self.loop_event.set()
-        if not self._started:
-            self._started = True
+        if not self.started:
+            self.started = True
             self.start()
+    
+    def shutdown(self):
+        self.running = False
+        self.futures.clear()
+        self.loop_event.set()
         
     def run(self):
-        while True:
+        while self.running:
             
             self.delay = min(self.delay * 2, self.MAX_DELAY)
             #print 'WAIT %f' % self.delay
@@ -116,6 +115,10 @@ class _Poller(threading.Thread):
                         future.set_exception(RuntimeError('no resultpackage'))
 
 
+_poller = _Poller()
+atexit.register(_poller.shutdown)
+
+
 class Executor(_base.Executor):
     
     def __init__(self):
@@ -134,7 +137,7 @@ class Executor(_base.Executor):
         submitted = qb.submit([job])
         assert len(submitted) == 1
         futures = []
-        poller = _Poller.instance()
+        poller = _poller
         for i, agenda in enumerate(job['agenda']):
             future = Future(submitted[0]['id'], i)
             poller.add(future)
