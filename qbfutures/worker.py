@@ -15,7 +15,7 @@ from . import utils
 
 
 
-debug = True
+debug = False
 
 
 def main():
