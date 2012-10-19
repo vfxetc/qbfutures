@@ -1,25 +1,23 @@
+import cPickle as pickle
 import datetime
+import fcntl
+import multiprocessing
+import os
 import pprint
 import subprocess
 import sys
 import time
 import traceback
-import cPickle as pickle
-import os
-import multiprocessing
-import fcntl
 
 import qb
 
 from . import utils
 
 
-
-debug = False
+debug = 'DEBUG' in os.environ
 
 
 def main():
-    print 'MAIN'
     
     job = {} if debug else qb.jobobj()
     jobstate = 'complete'
@@ -51,48 +49,64 @@ def main():
         
         request_pipe = os.pipe()
         response_pipe = os.pipe()
-        env = dict(os.environ)
-        env['QBFUTURES_PIPES'] = '%s,%s' % (request_pipe[0], response_pipe[1])
-        
-        interpreter = agenda['package'].get('interpreter', 'python')
-        proc = subprocess.Popen(['dev', '--bootstrap', interpreter, '-m', 'qbfutures.worker'],
-            close_fds=False,
-            env=env
+        proc = subprocess.Popen(
+            [
+                'dev', '--bootstrap',
+                agenda['package'].get('interpreter', 'python'),
+                '-m', 'qbfutures.worker',
+                str(request_pipe[0]), str(response_pipe[1]),
+            ],
+            close_fds=False
         )
         
+        # Close our end of the pipes so that we will get an EOFError if the
+        # pipe breaks.
+        os.close(request_pipe[0])
+        os.close(response_pipe[1])
+        
+        # Send the job and agenda to the child.
         with os.fdopen(request_pipe[1], 'w') as request_fh:
             pickle.dump(job, request_fh, -1)
             pickle.dump(agenda, request_fh, -1)
         
-        # fcntl.fcntl(response_pipe[0], fcntl.F_SETFL, os.O_NONBLOCK)
+        # Get the response from the child.
         with os.fdopen(response_pipe[0], 'r') as response_fh:
-            package = pickle.load(response_fh)
+            try:
+                package = pickle.load(response_fh)
+            except Exception as e:
+                package = {'status': 'failed', 'exception': e}
         
+        # Wait for the process to finish.
         proc.wait()
         
         agenda['resultpackage'] = package
         agenda['status'] = package.get('status', 'failed')
         
-        # print 'AGENDA: %r' % agenda
-        
-        if not debug:
-            qb.reportwork(agenda)
+        # print 'AGENDA: %r' % agenda['resultpackage']
         
         if debug:
             break
+        else:
+            qb.reportwork(agenda)
     
-    qb.reportjob(jobstate)
-    # print 'DONE parent'
+    if debug:
+        pass
+        # print 'DONE parent'
+    else:
+        qb.reportjob(jobstate)
 
 
 if __name__ == '__main__':
     # print 'EXECUTE'
 
-    request_pipe, response_pipe = [int(x) for x in os.environ['QBFUTURES_PIPES'].split(',')]
+    request_pipe, response_pipe = [int(x) for x in sys.argv[1:3]]
     request_fh = os.fdopen(request_pipe, 'r')
     response_fh = os.fdopen(response_pipe, 'w')
+    
+    package = {'status': 'failed'}
+    
     try:
-        
+                
         job = pickle.load(request_fh)
         agenda = pickle.load(request_fh)
     
@@ -105,10 +119,8 @@ if __name__ == '__main__':
         args = package.get('args') or ()
         kwargs = package.get('kwargs') or {}
         
-        print 'func:', repr(func)
-        print 'args:', repr(args)
-        print 'kwargs:', repr(kwargs)
-        print '---'
+        arg_spec = ', '.join([repr(x) for x in args] + ['%s=%r' % x for x in sorted(kwargs.iteritems())])
+        print '# qbfutures: calling %s(%s)' % (func, arg_spec)
     
         if isinstance(func, basestring):
             mod_name, func_name = func.split(':')
