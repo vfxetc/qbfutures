@@ -102,9 +102,7 @@ class _Poller(threading.Thread):
                     if future is None:
                         continue
                         
-                    result = agenda['resultpackage'] or {}
-                    if '__pickle__' in result:
-                        result = pickle.loads(result['__pickle__'].decode('base64'))
+                    result = utils.unpack(agenda['resultpackage'])
                     # print 'result: %r' % result
                     
                     if 'result' in result:
@@ -112,7 +110,7 @@ class _Poller(threading.Thread):
                     elif 'exception' in result:
                         future.set_exception(result['exception'])
                     else:
-                        future.set_exception(RuntimeError('no resultpackage'))
+                        future.set_exception(RuntimeError('invalid resultpackage'))
 
 
 _poller = _Poller()
@@ -129,7 +127,7 @@ class Executor(_base.Executor):
         job['prototype'] = 'qbfutures'
         job['name'] = name or 'Python: %s' % (func,)
         job['cpus'] = cpus or 1
-        job['env'] = dict(os.environ)
+        # job['env'] = dict(os.environ)
         job['agenda'] = []
         return job
         
