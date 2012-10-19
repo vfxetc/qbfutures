@@ -47,8 +47,10 @@ def main():
             time.sleep(timeout)
             continue
         
+        # Prepare some pipes for communicating with the subprocess.
         request_pipe = os.pipe()
         response_pipe = os.pipe()
+        
         proc = subprocess.Popen(
             [
                 'dev', '--bootstrap',

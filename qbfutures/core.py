@@ -125,7 +125,7 @@ class Executor(_base.Executor):
         job['prototype'] = 'qbfutures'
         job['name'] = name or 'Python: %s' % (func,)
         job['cpus'] = cpus or 1
-        # job['env'] = dict(os.environ)
+        job['env'] = {'QBFUTURES_PATH': os.path.abspath(os.path.join(__file__, '..', '..'))}
         job['agenda'] = []
         return job
         
