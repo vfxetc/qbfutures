@@ -12,6 +12,14 @@ import qb
 from . import utils
 
 
+# Test for maya.
+try:
+    from maya import cmds as maya_cmds, mel as maya_mel
+    IN_MAYA = True
+except ImportError:
+    IN_MAYA = False
+
+
 FINISHED = set(('complete', 'pending', 'blocked'))
 
 
@@ -99,7 +107,10 @@ class _Poller(threading.Thread):
                     future = self.futures.pop((job['id'], agenda_i), None)
                     if future is None:
                         continue
-                        
+                    
+                    # Back up to full speed.
+                    self.delay = self.MIN_DELAY
+                    
                     result = utils.unpack(agenda['resultpackage'])
                     # print 'RESULT: %r' % result
                     
@@ -120,12 +131,13 @@ class Executor(_base.Executor):
     def __init__(self):
         super(Executor, self).__init__()
     
-    def _base_job(self, func, name=None, cpus=1, **kwargs):
+    def _base_job(self, func, name=None, cpus=1, env=None, **kwargs):
         job = {}
         job['prototype'] = 'qbfutures'
         job['name'] = name or 'Python: %s' % (func,)
         job['cpus'] = cpus or 1
-        job['env'] = {'QBFUTURES_PATH': os.path.abspath(os.path.join(__file__, '..', '..'))}
+        job['env'] = dict(env or {})
+        job['env']['QBFUTURES_PATH'] = os.path.abspath(os.path.join(__file__, '..', '..'))
         job['agenda'] = []
         return job
         
@@ -144,15 +156,32 @@ class Executor(_base.Executor):
     def submit(self, func, *args, **kwargs):
         return self.submit_ext(func, args, kwargs)
         
-    def submit_ext(self, func, args, kwargs, **ext_kwargs):
+    def submit_ext(self, func, args=None, kwargs=None, **ext_kwargs):
         
         job = self._base_job(func, **ext_kwargs)
-        
+            
+        # Core package.
         package = {'func': func}
         if args:
             package['args'] = args
         if kwargs:
             package['kwargs'] = kwargs
+            
+        # Maya setup.
+        maya = ext_kwargs.get('maya')
+        if maya or maya is None and IN_MAYA:
+            if isinstance(maya, int):
+                maya = {'version': maya}
+            elif not isinstance(maya, dict):
+                maya = {}
+            if IN_MAYA:
+                maya.setdefault('workspace', maya_cmds.workspace(q=True, rootDirectory=True))
+                maya.setdefault('file', maya_cmds.file(q=True, expandName=True))
+                maya.setdefault('version', int(maya_mel.eval('about -version').split()[0]))
+            maya.setdefault('version', 2011)
+            ext_kwargs.setdefault('interpreter', 'maya%d_python' % maya['version'])
+            package['maya'] = maya
+            
         if 'interpreter' in ext_kwargs:
             package['interpreter'] = ext_kwargs['interpreter']
         
@@ -182,7 +211,9 @@ class Executor(_base.Executor):
             job['agenda'].append(agenda)
         
         futures = self._submit(job)
-        
+        return self._map_iter(futures)
+    
+    def _map_iter(self, futures):
         try:
             for future in futures:
                 if timeout is None:
@@ -192,4 +223,6 @@ class Executor(_base.Executor):
         finally:
             for future in futures:
                 future.cancel()
+
+
 

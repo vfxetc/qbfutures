@@ -54,15 +54,16 @@ def main():
         request_pipe = os.pipe()
         response_pipe = os.pipe()
         
-        proc = subprocess.Popen(
-            [
-                'dev', '--bootstrap',
-                agenda['package'].get('interpreter', 'python'),
-                '-m', 'qbfutures.worker',
-                str(request_pipe[0]), str(response_pipe[1]),
-            ],
-            close_fds=False
-        )
+        # Open the process, doing a dev bootstrap if this is a dev environment.
+        cmd = []
+        if 'KS_DEV_ARGS' in os.environ:
+            cmd.extend(('dev', '--bootstrap'))
+        cmd.extend((
+            agenda['package'].get('interpreter', 'python'),
+            '-m', 'qbfutures.worker',
+            str(request_pipe[0]), str(response_pipe[1]),
+        ))    
+        proc = subprocess.Popen(cmd, close_fds=False)
         
         # Close our end of the pipes so that we will get an EOFError if the
         # pipe breaks.
@@ -83,6 +84,10 @@ def main():
         
         # Wait for the process to finish.
         proc.wait()
+        
+        print '# qbfutures RESULT'
+        pprint.pprint(package)
+        print '# ---'
         
         agenda['resultpackage'] = package
         agenda['status'] = package.get('status', 'failed')
@@ -117,12 +122,26 @@ if __name__ == '__main__':
         job = pickle.load(request_fh)
         agenda = pickle.load(request_fh)
     
-        # Assemble the command to execute
         package = utils.unpack(agenda['package'])
+        
+        maya = package.get('maya')
+        if maya:
+            import maya.standalone as maya_standalone
+            maya_standalone.initialize()
+            from maya import cmds
+            filename = maya.get('file')
+            if filename:
+                print '# qbfutures: opening file %r' % filename
+                cmds.file(filename, open=True, force=True)
+            workspace = maya.get('workspace')
+            if workspace:
+                print '# qbfutures: setting workspace %r' % workspace
+                cmds.workspace(dir=workspace)
+            
+        # Assemble the command to execute
         func = package['func']
         args = package.get('args') or ()
         kwargs = package.get('kwargs') or {}
-        
         arg_spec = ', '.join([repr(x) for x in args] + ['%s=%r' % x for x in sorted(kwargs.iteritems())])
         print '# qbfutures: calling %s(%s)' % (func, arg_spec)
         

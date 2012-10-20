@@ -5,6 +5,12 @@ from .work import func
 
 import qb
 
+
+future = Executor().submit_ext('qbfutures.test.work:maya_test', maya=2011, name='QBFutures Maya Test')
+print future
+print future.result()
+print
+
 future = Executor().submit('qbfutures.test.work:func', 'single')
 print future
 print future.result()
