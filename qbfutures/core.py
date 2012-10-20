@@ -176,7 +176,7 @@ class Executor(_base.Executor):
                 maya = {}
             if IN_MAYA:
                 maya.setdefault('workspace', maya_cmds.workspace(q=True, rootDirectory=True))
-                maya.setdefault('file', maya_cmds.file(q=True, expandName=True))
+                # maya.setdefault('file', maya_cmds.file(q=True, expandName=True))
                 maya.setdefault('version', int(maya_mel.eval('about -version').split()[0]))
             maya.setdefault('version', 2011)
             ext_kwargs.setdefault('interpreter', 'maya%d_python' % maya['version'])
