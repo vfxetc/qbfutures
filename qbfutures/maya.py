@@ -31,13 +31,15 @@ def preflight(package):
 
 class Executor(core.Executor):
     
-    def __init__(self, clone_environ=None, create_tempfile=False, **kwargs):
-        super(Executor, self).__init__(**kwargs)
+    def __init__(self, clone_environ=None, create_tempfile=False, filename=None,
+        workspace=None, version=None
+    ):
+        super(Executor, self).__init__()
         
         # Pull overrides from given kwargs.
-        self.filename = kwargs.get('filename')
-        self.workspace = kwargs.get('workspace')
-        self.version = kwargs.get('version')
+        self.filename = filename
+        self.workspace = workspace
+        self.version = version
         
         if create_tempfile:
             if isinstance(create_tempfile, basestring):
@@ -50,6 +52,7 @@ class Executor(core.Executor):
         self.version = self.version or 2011
         
     def create_tempfile(self):
+        
         if not IN_MAYA:
             raise RuntimeError('cannot create tempfile when not in Maya')
 
@@ -65,7 +68,7 @@ class Executor(core.Executor):
                 datetime.datetime.utcnow().isoformat('T'),
                 base_ext,
             ))
-            print 'FILENAME', self.filename
+            print '# qbfutures tempfile:', repr(self.filename)
         
         # Create the directory.
         dir_path = os.path.dirname(self.filename)
@@ -89,8 +92,8 @@ class Executor(core.Executor):
         if self.version is None:
             self.version = int(maya_mel.eval('about -version').split()[0])
     
-    def _base_package(self, kwargs):
-        package = super(Executor, self)._base_package(kwargs)
+    def _base_work_package(self, *args, **kwargs):
+        package = super(Executor, self)._base_work_package(*args, **kwargs)
         
         # Executor information.
         package['preflight'] = '%s:preflight' % __name__

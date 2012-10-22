@@ -24,7 +24,7 @@ if _debug:
             self._agenda = {
                 'status': 'running',
                 'package': {
-                    'callable': 'qbfutures.test.work:func',
+                    'func': 'qbfutures.test.work:func',
                 },
             }
         
@@ -159,13 +159,13 @@ def execute():
         # Run any requested preflight functions.
         preflight = package.get('preflight')
         if preflight:
-            print '#qbfutures: running preflight %s' % utils.get_callable_name(package['preflight'])
-            preflight = utils.get_callable(preflight)
+            print '#qbfutures: running preflight %s' % utils.get_func_name(package['preflight'])
+            preflight = utils.get_func(preflight)
             preflight(package)
         
         # Assemble the command to execute
-        func = utils.get_callable(package['callable'])
-        func_str = utils.get_callable_name(package['callable'])
+        func = utils.get_func(package['func'])
+        func_str = utils.get_func_name(package['func'])
         args = package.get('args') or ()
         kwargs = package.get('kwargs') or {}
         

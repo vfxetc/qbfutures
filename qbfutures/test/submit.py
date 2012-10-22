@@ -37,6 +37,6 @@ with Executor().batch('Test Batch') as batch:
     cwd = batch.submit(os.getcwd)
 
 for future in as_completed(batch.futures):
-    print future.job_id, future.agenda_id, future.result()
+    print future.job_id, future.work_id, future.result()
     
 print

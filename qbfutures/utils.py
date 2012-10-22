@@ -9,19 +9,19 @@ def extend(target, *args, **kwargs):
     return target
 
 
-def get_callable(spec):
+def get_func(spec):
     if not isinstance(spec, basestring):
         return spec
     
     m = re.match(r'([\w\.]+):([\w]+)$', spec)
     if not m:
-        raise ValueError('string callables must be for form "package.module:function"')
+        raise ValueError('string funcs must be for form "package.module:function"')
     mod_name, func_name = m.groups()
     mod = __import__(mod_name, fromlist=['.'])
     return getattr(mod, func_name)
 
 
-def get_callable_name(spec):
+def get_func_name(spec):
     if isinstance(spec, basestring):
         return spec
     return '%s.%s' % (getattr(spec, '__module__', '__module__'), getattr(spec, '__name__', str(spec)))
