@@ -24,6 +24,8 @@
 - match both the concurrent.futures API and the multiprocessing one
     - unordered_imap, etc.
 
+- Maya is segfaulting after running some things
+    see 27180
 
 - Maya environment not being setup properly
     got work: 27178:ric/3D/sourceimages/specialChannels/v0001/generic_head_specialC04_v0001.tif - running
