@@ -4,6 +4,7 @@ import socket
 import cPickle as pickle
 import time
 import atexit
+import Queue as queue
 
 from concurrent.futures import _base
 
@@ -37,13 +38,13 @@ class Future(_base.Future):
         return res
     
     def status(self):
-        job = qb.jobinfo(id=[self.job_id], agenda=True)
-        return job[0]['agenda'][self.agenda_id]['status']
+        job = qb.jobinfo(id=[self.job_id])
+        return job[0]['agendastatus']
 
 
 class _Poller(threading.Thread):
     
-    MIN_DELAY = 0.001
+    MIN_DELAY = 0.1
     MAX_DELAY = 2.0
     
     def __init__(self, two_stage_polling=False):
@@ -53,13 +54,14 @@ class _Poller(threading.Thread):
         self.two_stage_polling = two_stage_polling
         
         self.futures = {}
+        self.new_futures = queue.Queue()
         self.delay = self.MAX_DELAY
         self.loop_event = threading.Event()
         self.started = False
         self.running = True
     
     def add(self, future):
-        self.futures[(future.job_id, future.agenda_id)] = future
+        self.new_futures.put(future)
     
     def trigger(self):
         self.delay = self.MIN_DELAY
@@ -76,16 +78,33 @@ class _Poller(threading.Thread):
     def run(self):
         while self.running:
             
-            self.delay = min(self.delay * 2, self.MAX_DELAY)
-            #print 'WAIT %f' % self.delay
+            # Wait for a timer, or for someone to trigger us. We want to wait
+            # slightly longer each time, but given the nature of qube a 2x
+            # increase in delay leads us to log waits too quickly.
+            self.delay = min(self.delay * 1.15, self.MAX_DELAY)
+            # print 'WAITING FOR', self.delay
             self.loop_event.wait(self.delay)
-            #print 'done wait'
             if self.loop_event.is_set():
                 self.loop_event.clear()
             
-            if not self.futures:
-                self.delay = self.MAX_DELAY
-                continue
+            # Get all the new futures. If we don't have any and there aren't any
+            # in the queue, then wait on the queue for something to show up.
+            queue_emptied = False
+            while not queue_emptied or not self.futures:
+                try:
+                    # Block while we don't have any futures.
+                    future = self.new_futures.get(not self.futures)
+                
+                except queue.Empty:
+                    queue_emptied = True
+                
+                else:
+                    self.futures[(future.job_id, future.agenda_id)] = future
+                    
+                    # We did just get something from the queue, so it
+                    # potentially has more. Keep emptying it without fear or
+                    # re-entering the loop since futures will be non-empty.
+                    queue_emptied = True
             
             # print 'QUICK POLL: %r' % self.futures.keys()
             jobs = qb.jobinfo(id=[f.job_id for f in self.futures.itervalues()], agenda=not self.two_stage_polling)
