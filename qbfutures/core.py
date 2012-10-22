@@ -146,6 +146,8 @@ class Executor(_base.Executor):
         job['cpus'] = cpus or 1
         job['env'] = dict(env or {})
         job['env']['QBFUTURES_PATH'] = os.path.abspath(os.path.join(__file__, '..', '..'))
+        if 'KS_DEV_ARGS' in os.environ:
+            job['env']['KS_DEV_ARGS'] = os.environ['KS_DEV_ARGS']
         job['agenda'] = []
         job['package'] = {}
         return job

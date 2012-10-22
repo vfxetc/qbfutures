@@ -1,3 +1,5 @@
+import sys
+import os
 
 def func(*args, **kwargs):
     return args
@@ -12,3 +14,9 @@ def maya_test():
     return 'DONE'
 
 
+def list_transforms():
+    from maya import cmds
+    return cmds.ls(type='transform')
+
+def get_sys_path():
+    return list(sys.path)
