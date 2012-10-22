@@ -134,11 +134,65 @@ _poller = _Poller()
 atexit.register(_poller.shutdown)
 
 
+class BatchFuture(Future):
+    
+    def __init__(self, agenda):
+        super(BatchFuture, self).__init__(0, 0)
+        self.agenda = agenda
+
+
+class Batch(object):
+
+    def __init__(self, executor, job):
+        self._executor = executor
+        self._job = job
+        self.futures = []
+        self.pending_futures = []
+    
+    def submit(self, func, *args, **kwargs):
+        return self.submit_ext(func, args, kwargs)
+    
+    def submit_ext(self, func, args=None, kwargs=None, **ext_kwargs):
+        agenda = qb.Work()
+        agenda['name'] = ext_kwargs.get('name',
+            '%d: %s' % (len(self.futures) + 1, utils.get_callable_name(func))
+        )
+        agenda['package'] = utils.pack(self._executor._base_package(func, args, kwargs, ext_kwargs))
+        future = BatchFuture(agenda)
+        self.pending_futures.append(future)
+        return future
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, *exc_info):
+        if not exc_info[0]:
+            self.apply()
+    
+    def apply(self):
+        self._job['agenda'] = [future.agenda for future in self.pending_futures]
+        submitted = qb.submit([self._job])
+        assert len(submitted) == 1
+        for i, future in enumerate(self.pending_futures):
+            future.job_id = submitted[0]['id']
+            future.agenda_id = i
+            _poller.add(future)
+            self.futures.append(future)
+        self.pending_futures = []
+        _poller.trigger()
+        return self.futures
+
+
 class Executor(_base.Executor):
     
     def __init__(self, **kwargs):
         super(Executor, self).__init__()
     
+    def batch(self, name=None, **kwargs):
+        kwargs['name'] = name or 'Python Batch'
+        job = self._base_job(None, **kwargs)
+        return Batch(self, job)
+        
     def _base_job(self, func, name=None, cpus=1, env=None, **kwargs):
         job = {}
         job['prototype'] = 'qbfutures'
@@ -152,10 +206,15 @@ class Executor(_base.Executor):
         job['package'] = {}
         return job
     
-    def _base_package(self, kwargs):
-        package = {}
-        if 'interpreter' in kwargs:
-            package['interpreter'] = kwargs['interpreter']
+    def _base_package(self, func, args=None, kwargs=None, ext_kwargs=None):
+        package = {
+            'callable': func,
+            'args': args or (),
+            'kwargs': dict(kwargs or {}),
+        }
+        ext_kwargs = ext_kwargs or {}
+        if 'interpreter' in ext_kwargs:
+            package['interpreter'] = ext_kwargs['interpreter']
         return package
     
     def _submit(self, job):
@@ -174,20 +233,11 @@ class Executor(_base.Executor):
         return self.submit_ext(func, args, kwargs)
         
     def submit_ext(self, func, args=None, kwargs=None, **ext_kwargs):
-        
         job = self._base_job(func, **ext_kwargs)
-        
-        package = self._base_package(ext_kwargs)
-        package['callable'] = func
-        package['args'] = args or ()
-        package['kwargs'] = kwargs or {}
-        
         agenda = qb.Work()
         agenda['name'] = '1'
-        agenda['package'] = utils.pack(package)
-        
+        agenda['package'] = utils.pack(self._base_package(func, args, kwargs, ext_kwargs))
         job['agenda'] = [agenda]
-        
         return self._submit(job)[0]
     
     def map(self, func, *iterables, **kwargs):
@@ -197,10 +247,7 @@ class Executor(_base.Executor):
         for i, args in enumerate(zip(*iterables)):
             agenda = qb.Work()
             agenda['name'] = str(i + 1)
-            agenda['package'] = utils.pack({
-                'callable': func,
-                'args': args,
-            })
+            agenda['package'] = utils.pack(self._base_package(func, args, None, kwargs))
             job['agenda'].append(agenda)
         
         futures = self._submit(job)

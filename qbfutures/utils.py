@@ -2,6 +2,13 @@ import re
 import cPickle as pickle
 
 
+def extend(target, *args, **kwargs):
+    for arg in args:
+        target.update(arg or {})
+    target.update(kwargs)
+    return target
+
+
 def get_callable(spec):
     if not isinstance(spec, basestring):
         return spec
