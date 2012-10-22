@@ -214,10 +214,6 @@ class Executor(_base.Executor):
     
     def map(self, func, *iterables, **kwargs):
         
-        timeout = kwargs.get('timeout')
-        if timeout is not None:
-            end_time = timeout + time.time()
-        
         job = self._base_job(func, **kwargs)
         
         for i, args in enumerate(zip(*iterables)):
@@ -230,9 +226,11 @@ class Executor(_base.Executor):
             job['agenda'].append(agenda)
         
         futures = self._submit(job)
-        return self._map_iter(futures)
+        return self._map_iter(futures, kwargs.get('timeout'))
     
-    def _map_iter(self, futures):
+    def _map_iter(self, futures, timeout):
+        if timeout is not None:
+            end_time = timeout + time.time()
         try:
             for future in futures:
                 if timeout is None:
