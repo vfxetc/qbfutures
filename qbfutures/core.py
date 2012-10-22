@@ -147,19 +147,26 @@ atexit.register(_poller.shutdown)
 
 class Executor(_base.Executor):
     
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(Executor, self).__init__()
     
     def _base_job(self, func, name=None, cpus=1, env=None, **kwargs):
         job = {}
         job['prototype'] = 'qbfutures'
-        job['name'] = name or 'Python: %s' % (func,)
+        job['name'] = name or 'Python: %s' % utils.get_callable_name(func)
         job['cpus'] = cpus or 1
         job['env'] = dict(env or {})
         job['env']['QBFUTURES_PATH'] = os.path.abspath(os.path.join(__file__, '..', '..'))
         job['agenda'] = []
+        job['package'] = {}
         return job
-        
+    
+    def _base_package(self, kwargs):
+        package = {}
+        if 'interpreter' in kwargs:
+            package['interpreter'] = kwargs['interpreter']
+        return package
+    
     def _submit(self, job):
         submitted = qb.submit([job])
         assert len(submitted) == 1
@@ -179,13 +186,6 @@ class Executor(_base.Executor):
         
         job = self._base_job(func, **ext_kwargs)
             
-        # Core package.
-        package = {'func': func}
-        if args:
-            package['args'] = args
-        if kwargs:
-            package['kwargs'] = kwargs
-            
         # Maya setup.
         maya = ext_kwargs.get('maya')
         if maya or maya is None and IN_MAYA:
@@ -204,6 +204,11 @@ class Executor(_base.Executor):
         if 'interpreter' in ext_kwargs:
             package['interpreter'] = ext_kwargs['interpreter']
         
+        package = self._base_package(ext_kwargs)
+        package['callable'] = func
+        package['args'] = args or ()
+        package['kwargs'] = kwargs or {}
+        
         agenda = qb.Work()
         agenda['name'] = '1'
         agenda['package'] = utils.pack(package)
@@ -220,7 +225,7 @@ class Executor(_base.Executor):
             agenda = qb.Work()
             agenda['name'] = str(i + 1)
             agenda['package'] = utils.pack({
-                'func': func,
+                'callable': func,
                 'args': args,
             })
             job['agenda'].append(agenda)
