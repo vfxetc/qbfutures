@@ -13,17 +13,6 @@ import qb
 from . import utils
 
 
-# Test for maya.
-try:
-    from maya import cmds as maya_cmds, mel as maya_mel
-    IN_MAYA = True
-except ImportError:
-    IN_MAYA = False
-
-
-FINISHED = set(('complete', 'pending', 'blocked'))
-
-
 class Future(_base.Future):
     
     def __init__(self, job_id, agenda_id):
@@ -185,24 +174,6 @@ class Executor(_base.Executor):
     def submit_ext(self, func, args=None, kwargs=None, **ext_kwargs):
         
         job = self._base_job(func, **ext_kwargs)
-            
-        # Maya setup.
-        maya = ext_kwargs.get('maya')
-        if maya or maya is None and IN_MAYA:
-            if isinstance(maya, int):
-                maya = {'version': maya}
-            elif not isinstance(maya, dict):
-                maya = {}
-            if IN_MAYA:
-                maya.setdefault('workspace', maya_cmds.workspace(q=True, rootDirectory=True))
-                # maya.setdefault('file', maya_cmds.file(q=True, expandName=True))
-                maya.setdefault('version', int(maya_mel.eval('about -version').split()[0]))
-            maya.setdefault('version', 2011)
-            ext_kwargs.setdefault('interpreter', 'maya%d_python' % maya['version'])
-            package['maya'] = maya
-            
-        if 'interpreter' in ext_kwargs:
-            package['interpreter'] = ext_kwargs['interpreter']
         
         package = self._base_package(ext_kwargs)
         package['callable'] = func
