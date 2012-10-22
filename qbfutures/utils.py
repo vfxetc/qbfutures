@@ -29,6 +29,7 @@ def get_func_name(spec):
     
 def pack(package):
     res = dict(package)
+    res.pop('__pickle__', None)
     res['__pickle__'] = pickle.dumps(res).encode('base64')
     return res
 

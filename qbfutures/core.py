@@ -54,15 +54,30 @@ class Batch(object):
     def submit(self, func, *args, **kwargs):
         return self.submit_ext(func, args, kwargs)
     
-    def submit_ext(self, func, args=None, kwargs=None, **ext_kwargs):
-        agenda = qb.Work()
-        agenda['name'] = ext_kwargs.get('name',
+    def submit_ext(self, func, args=None, kwargs=None, **extra):
+        work = qb.Work()
+        work['name'] = extra.get('name',
             '%d: %s' % (len(self.futures) + 1, utils.get_func_name(func))
         )
-        agenda['package'] = utils.pack(self.executor._base_work_package(func, args, kwargs, ext_kwargs))
-        future = BatchFuture(agenda)
+        work['package'] = utils.pack(self.executor._base_work_package(func, args, kwargs, extra))
+        future = BatchFuture(work)
         self.futures.append(future)
         return future
+    
+    def map(self, func, *iterables, **extra):
+        futures = []
+        for i, args in enumerate(zip(*iterables)):
+            
+            work = qb.Work()
+            package = self.executor._base_work_package(func, args, None, extra)
+            work['name'] = package.pop('name', str(i + 1))
+            work['package'] = utils.pack(package)
+            
+            future = BatchFuture(work)
+            futures.append(future)
+            self.futures.append(future)
+        
+        return self.executor._map_iter(futures, extra.get('timeout'))
     
     def __enter__(self):
         return self
@@ -85,31 +100,25 @@ class Batch(object):
 
 class Executor(_base.Executor):
     
-    def __init__(self, job_name=None, cpus=None, env=None):
+    def __init__(self, **kwargs):
         super(Executor, self).__init__()
-        self.job_name = job_name or 'Python: {func}'
-        self.cpus = cpus
-        self.env = dict(env or {})
+        self.defaults = kwargs
     
-    def batch(self, name=None, **kwargs):
+    def batch(self, name='QBFutures Batch', **kwargs):
         kwargs['name'] = name
         job = self._base_job(None, **kwargs)
         return Batch(self, job)
         
-    def _base_job(self, func, name=None, cpus=1, env=None, **kwargs):
+    def _base_job(self, func, **kwargs):
         
-        job = {}
-        job['prototype'] = 'qbfutures'
+        job = dict(self.defaults)
+        job.update(kwargs)
         
-        name = name or self.job_name
-        job['name'] = name.format(
-            func=utils.get_func_name(func) if func else 'None',
-        )
+        job.setdefault('prototype', 'qbfutures')
+        job.setdefault('name', 'QBFutures: %s' % utils.get_func_name(func))
         
-        job['cpus'] = cpus or self.cpus
-        
-        job['env'] = dict(self.env)
-        job['env'].update(env or {})
+        # Make sure this is a clean copy.
+        job['env'] = dict(job.get('env') or {})
         job['env']['QBFUTURES_PATH'] = os.path.abspath(os.path.join(__file__, '..', '..'))
         if 'KS_DEV_ARGS' in os.environ:
             job['env']['KS_DEV_ARGS'] = os.environ['KS_DEV_ARGS']
@@ -119,7 +128,7 @@ class Executor(_base.Executor):
         
         return job
     
-    def _base_work_package(self, func, args=None, kwargs=None, ext_kwargs=None):
+    def _base_work_package(self, func, args=None, kwargs=None, extra=None):
         
         package = {
             'func': func,
@@ -127,10 +136,10 @@ class Executor(_base.Executor):
             'kwargs': dict(kwargs or {}),
         }
         
-        ext_kwargs = ext_kwargs or {}
-                
-        if 'interpreter' in ext_kwargs:
-            package['interpreter'] = ext_kwargs['interpreter']
+        extra = extra or {}
+        for attr in ('interperter', 'name'):
+            if attr in extra:
+                package[attr] = extra[attr]
         
         return package
     
@@ -150,26 +159,28 @@ class Executor(_base.Executor):
     def submit(self, func, *args, **kwargs):
         return self.submit_ext(func, args, kwargs)
         
-    def submit_ext(self, func, args=None, kwargs=None, **ext_kwargs):
-        job = self._base_job(func, **ext_kwargs)
+    def submit_ext(self, func, args=None, kwargs=None, **extra):
+        job = self._base_job(func, **extra)
         work = qb.Work()
-        work['name'] = ext_kwargs.get('name', '1')
-        work['package'] = utils.pack(self._base_work_package(func, args, kwargs, ext_kwargs))
+        package = self._base_work_package(func, args, kwargs, extra)
+        work['name'] = package.pop('name', '1')
+        work['package'] = utils.pack(package)
         job['agenda'] = [work]
         return self._submit(job)[0]
     
-    def map(self, func, *iterables, **kwargs):
+    def map(self, func, *iterables, **extra):
         
-        job = self._base_job(func, **kwargs)
+        job = self._base_job(func, **extra)
         
         for i, args in enumerate(zip(*iterables)):
             work = qb.Work()
-            work['name'] = str(i + 1)
-            work['package'] = utils.pack(self._base_work_package(func, args, None, kwargs))
+            package = self._base_work_package(func, args, None, extra)
+            work['name'] = package.pop('name', str(i + 1))
+            work['package'] = utils.pack(package)
             job['agenda'].append(work)
         
         futures = self._submit(job)
-        return self._map_iter(futures, kwargs.get('timeout'))
+        return self._map_iter(futures, extra.get('timeout'))
     
     def _map_iter(self, futures, timeout):
         if timeout is not None:

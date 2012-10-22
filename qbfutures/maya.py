@@ -19,10 +19,12 @@ def preflight(package):
     maya_standalone.initialize()
     
     from maya import cmds
+    
     filename = package.get('filename')
     if filename:
         print '# qbfutures.maya: opening file %r' % filename
         cmds.file(filename, open=True, force=True)
+    
     workspace = package.get('workspace')
     if workspace:
         print '# qbfutures.maya: setting workspace %r' % workspace
@@ -93,26 +95,16 @@ class Executor(core.Executor):
         if self.version is None:
             self.version = int(maya_mel.eval('about -version').split()[0])
     
-    def _base_work_package(self, *args, **kwargs):
-        package = super(Executor, self)._base_work_package(*args, **kwargs)
+    def _base_work_package(self, func, args=None, kwargs=None, extra={}):
+        package = super(Executor, self)._base_work_package(func, args, kwargs, extra)
         
         # Executor information.
         package['preflight'] = '%s:preflight' % __name__
-        package['interpreter'] = kwargs.get('interpreter', 'maya%d_python' % self.version)
+        package['interpreter'] = extra.get('interpreter', 'maya%d_python' % self.version)
         
         # The Maya environment.
-        package['filename'] = kwargs.get('filename', self.filename)
-        package['workspace'] = kwargs.get('workspace', self.workspace)
-        package['version'] = kwargs.get('version', self.version)
-    
+        package['filename'] = extra.get('filename', self.filename)
+        package['workspace'] = extra.get('workspace', self.workspace)
+        package['version'] = extra.get('version', self.version)
+        
         return package
-            
-            
-            
-            
-            
-            
-            
-            
-            
-            
