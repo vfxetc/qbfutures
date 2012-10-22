@@ -17,5 +17,6 @@ def submit():
         print future.job_id, future.work_id, future.node, future.result()
 
 
+
 def get_type(node):
     return cmds.nodeType(node)

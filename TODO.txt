@@ -1,1 +1,38 @@
-- Shutdown nicely.
+- Docs
+    - installing the custom types
+
+- Event server
+    - qbfutures.event.send(event) sends arbitrary data back to the handler
+
+- Whenever there is an update, update future.job and future.work.
+    - Only promise to update them in place, and not to remove stale things OR
+      to update subobjects (e.g. `env`) in place.
+
+- `from maya import cmds` somewhere is failing
+
+- Mark's stuff is causing core dumps after it is done
+- Remove things that qube can't pickle from the package to avoid the error:
+    "unrecognized object encountered during conversion."
+    - just replace them with 'PICKLED:%r'
+
+- .core.Executor.submit_range('1-10', func, *args, **kwargs)
+    - func recieves the frame as the first argument
+
+- be able to trigger emails after the fact?
+    this could be a part of our custom qube prototype
+        
+- match both the concurrent.futures API and the multiprocessing one
+    - unordered_imap, etc.
+
+
+- Maya environment not being setup properly
+    got work: 27178:ric/3D/sourceimages/specialChannels/v0001/generic_head_specialC04_v0001.tif - running
+    Failed to execute userSetup.py
+    Traceback (most recent call last):
+      File "/home/mreid/key_local_tool_development/key_base/3d/maya/python/userSetup.py", line 8, in <module>
+        from ks.maya import tickets
+      File "/home/mreid/key_local_tool_development/key_base/python/ks.py", line 171, in load_module
+        return imp.load_module(self.namespaced_name, self.file, self.path, self.description)
+      File "/home/mreid/key_local_tool_development/key_base/3d/maya/python/tickets.py", line 11, in <module>
+        from PyQt4 import QtCore, QtGui
+    ImportError: No module named PyQt4
