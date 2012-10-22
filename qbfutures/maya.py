@@ -65,7 +65,7 @@ class Executor(core.Executor):
             dir_path = os.path.dirname(existing).replace('/.qbfutures', '')
             self.filename = os.path.join(dir_path, '.qbfutures', '%s.%s%s' % (
                 base_name,
-                datetime.datetime.utcnow().isoformat('T'),
+                datetime.datetime.utcnow().strftime('%y%m%d.%H%M%S.%f'),
                 base_ext,
             ))
             print '# qbfutures tempfile:', repr(self.filename)
@@ -76,11 +76,12 @@ class Executor(core.Executor):
             os.makedirs(dir_path)
         
         # Save the file.
-        maya_cmds.file(rename=self.filename)
-        _, ext = os.path.splitext(self.filename)
-        maya_cmds.file(save=True, force=True, type='mayaAscii' if ext == '.ma' else 'mayaBinary')
-        
-        maya_cmds.file(rename=existing)
+        try:
+            maya_cmds.file(rename=self.filename)
+            _, ext = os.path.splitext(self.filename)
+            maya_cmds.file(save=True, force=True, type='mayaAscii' if ext == '.ma' else 'mayaBinary')
+        finally:
+            maya_cmds.file(rename=existing)
     
     def clone_environ(self):
         if not IN_MAYA:
