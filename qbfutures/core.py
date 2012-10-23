@@ -180,7 +180,9 @@ class Executor(_base.Executor):
         }
         
         extra = extra or {}
-        for attr in ('interperter', 'name'):
+        for attr in ('interpreter', 'name'):
+            if attr in self.defaults:
+                package[attr] = self.defaults[attr]
             if attr in extra:
                 package[attr] = extra[attr]
         

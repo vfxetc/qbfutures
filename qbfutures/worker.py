@@ -87,6 +87,8 @@ def main():
             print '# qbfutures: reporting job as %s' % agenda['status']
             sys.stdout.flush()
             qb.reportjob(agenda['status'])
+            print '# qbfutures: worker shutting down'
+            sys.stdout.flush()
             return
         
         # Waiting; relatively rare, try again shortly.
