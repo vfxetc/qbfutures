@@ -1,6 +1,7 @@
 import atexit
-import threading
 import Queue as queue
+import threading
+import weakref
 
 import qb
 
@@ -18,7 +19,7 @@ class Poller(threading.Thread):
         
         self.two_stage_polling = two_stage_polling
         
-        self.futures = {}
+        self.futures = weakref.WeakValueDictionary()
         self.new_futures = queue.Queue()
         self.delay = self.MAX_DELAY
         self.loop_event = threading.Event()
@@ -49,7 +50,7 @@ class Poller(threading.Thread):
             # slightly longer each time, but given the nature of qube a 2x
             # increase in delay leads us to log waits too quickly.
             self.delay = min(self.delay * 1.15, self.MAX_DELAY)
-            # print 'WAITING FOR', self.delay
+            print 'WAITING FOR', self.delay
             self.loop_event.wait(self.delay)
             if self.loop_event.is_set():
                 self.loop_event.clear()
@@ -72,9 +73,13 @@ class Poller(threading.Thread):
                     # potentially has more. Keep emptying it without fear or
                     # re-entering the loop since futures will be non-empty.
                     queue_emptied = True
+                    
+                    # Clean up so weak refs can vanish.
+                    del future
             
             # print 'QUICK POLL: %r' % self.futures.keys()
-            jobs = qb.jobinfo(id=[f.job_id for f in self.futures.itervalues()], agenda=not self.two_stage_polling)
+            # Using `values` instead of `itervalues` for the weakref.
+            jobs = qb.jobinfo(id=[f.job_id for f in self.futures.values()], agenda=not self.two_stage_polling)
             # print 'done quick poll'
             
             if self.two_stage_polling:
@@ -106,4 +111,7 @@ class Poller(threading.Thread):
                         future.set_exception(result['exception'])
                     else:
                         future.set_exception(RuntimeError('invalid resultpackage'))
+                    
+                    # Clean up so weak refs can vanish.
+                    del future
 
