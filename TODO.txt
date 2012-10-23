@@ -1,5 +1,4 @@
 - Docs
-    - installing the custom types
     - weakrefs
     - recursion
     - string entrypoints instead of callables
