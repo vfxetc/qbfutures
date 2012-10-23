@@ -57,6 +57,24 @@ arguments to either :func:`Batch.submit_ext` or :func:`Batch.map` will be
 passed through to the ``qb.Work``.
 
 
+Maya
+^^^^
+
+An ``Executor`` subclass exists for use with Maya, which will bootstrap the Maya process, and optionally open a file to work on and set the workspace. It also provides convenience functions for cloning the current environment, and creating a temporary copy of the current file for the other processes to work on.
+
+::
+
+    >>> executor = qbfutures.maya.Executor(clone_environ=True, cpus=4)
+    >>> executor.create_tempfile()
+    >>> with executor.batch("Get Node Types") as batch:
+    ...     for node in cmds.ls(sl=True):
+    ...         future = batch.submit(cmds.nodeType, node)
+    ...         future.node = node
+    ...
+    >>> for future in as_completed(batch.futures):
+    ...     print future.job_id, future.work_id, future.node, future.result()
+
+
 API Reference
 -------------
 
@@ -78,6 +96,11 @@ Batch
 .. autoclass:: qbfutures.core.Batch
     :members:
 
+Maya
+^^^^
+
+.. autoclass:: qbfutures.maya.Executor
+    :members:
 
 Indices and tables
 ------------------

@@ -33,27 +33,39 @@ def preflight(package):
 
 class Executor(core.Executor):
     
+    """An executor that is tailored to the Maya environment.
+    
+    :param bool clone_environ: Convenience for :func:`~qbfutures.maya.Executor.clone_environ`.
+    :param bool create_tempfile: Convenience for :func:`~qbfutures.maya.Executor.create_tempfile`.
+    :param str filename: File to open once bootstrapped.
+    :param str workspace: Workspace to set once bootstrapped.
+    :param int version: Version of maya to use.
+    
+    """
     def __init__(self, clone_environ=None, create_tempfile=False, filename=None,
-        workspace=None, version=None
+        workspace=None, version=None, **kwargs
     ):
-        super(Executor, self).__init__()
+        super(Executor, self).__init__(**kwargs)
         
         # Pull overrides from given kwargs.
         self.filename = filename
         self.workspace = workspace
         self.version = version
         
+        if clone_environ:
+            self.clone_environ()
         if create_tempfile:
             if isinstance(create_tempfile, basestring):
                 self.filename = create_tempfile
+            else:
+                self.filename = filename # Override the cloned environment.
             self.create_tempfile()
-        if clone_environ:
-            self.clone_environ()
         
         # Set a default.
         self.version = self.version or 2011
         
     def create_tempfile(self):
+        """Save the current file in a temporary location for Qube processes to use."""
         
         if not IN_MAYA:
             raise RuntimeError('cannot create tempfile when not in Maya')
@@ -86,6 +98,11 @@ class Executor(core.Executor):
             maya_cmds.file(rename=existing)
     
     def clone_environ(self):
+        """Set the jobs to use the same environment that we are currently in.
+        
+        Sets the current filename, workspace, and version.
+        
+        """
         if not IN_MAYA:
             raise RuntimeError('cannot clone environment when not in Maya')
         if self.filename is None:
