@@ -97,7 +97,7 @@ def main():
         if 'KS_DEV_ARGS' in os.environ:
             cmd.extend(('dev', '--bootstrap'))
         cmd.extend((
-            agenda['package'].get('interpreter', 'python'),
+            utils.unpack(agenda['package']).get('interpreter', 'python'),
             '-m', 'qbfutures.worker',
             str(request_pipe[0]), str(response_pipe[1]),
         ))    
@@ -147,7 +147,7 @@ def execute():
     response_fh = os.fdopen(response_pipe, 'w')
     
     # Just in case someone calls `exit()` which won't be caught below.
-    package = {'status': 'failed'}
+    result_package = {'status': 'failed'}
     
     try:
         
@@ -173,14 +173,14 @@ def execute():
         arg_spec = ', '.join([repr(x) for x in args] + ['%s=%r' % x for x in sorted(kwargs.iteritems())])
         print '# qbfutures: calling %s(%s)' % (func_str, arg_spec)
         
-        package = {
+        result_package = {
             'result': func(*args, **kwargs),
             'status': 'complete',
         }
         
     except Exception as e:
         traceback.print_exc()
-        package = {
+        result_package = {
             'exception': e,
             'status': 'failed',
         }
@@ -188,7 +188,7 @@ def execute():
     finally:
 
         # Send the results to the child.
-        pickle.dump(package, response_fh, -1)
+        pickle.dump(result_package, response_fh, -1)
 
         request_fh.close()
         response_fh.close()

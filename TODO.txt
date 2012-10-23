@@ -1,7 +1,5 @@
-- Docs
-    - weakrefs
-    - recursion
-    - string entrypoints instead of callables
+- Attach args and kwargs to futures?
+- Attach job and work to futures, and update them on every poll?
 
 - Job to print out environment of every machine on the farm
 
