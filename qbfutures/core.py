@@ -152,7 +152,7 @@ class Executor(_base.Executor):
         job['env'] = dict(job.get('env') or {})
         
         # For bootstrapping development of this package.
-        job['env']['QBFUTURES_PATH'] = os.path.abspath(os.path.join(__file__, '..', '..'))
+        job['env']['QBFUTURES_DIR'] = os.path.abspath(os.path.join(__file__, '..', '..'))
         
         # Passthrough select environment variables.
         for name in itertools.chain(self.environ_passthroughs, ('QBFUTURES_RECURSION_LIMIT', )):
