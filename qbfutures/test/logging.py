@@ -22,5 +22,5 @@ if __name__ == '__main__':
         name="Qube Logging Dump",
     )
     executor.submit('qbfutures.test.logging:dump_logging').result()
-    
+
 

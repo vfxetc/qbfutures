@@ -15,6 +15,8 @@ except ImportError:
 
 def preflight(package):
     
+    from .worker import log
+    
     import maya.standalone as maya_standalone
     maya_standalone.initialize()
     
@@ -22,12 +24,12 @@ def preflight(package):
     
     filename = package.get('filename')
     if filename:
-        print '# qbfutures.maya: opening file %r' % filename
+        log('opening file %r' % filename)
         cmds.file(filename, open=True, force=True)
     
     workspace = package.get('workspace')
     if workspace:
-        print '# qbfutures.maya: setting workspace %r' % workspace
+        log('setting workspace %r' % workspace)
         cmds.workspace(dir=workspace)
 
 

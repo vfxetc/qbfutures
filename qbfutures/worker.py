@@ -14,6 +14,12 @@ import qb
 from . import utils
 
 
+def log(msg):
+    sys.stdout.write('# qbfutures: %s\n' % msg.rstrip())
+    sys.stdout.flush()
+    sys.stderr.write('# qbfutures: %s\n' % msg.rstrip())
+    sys.stderr.flush()
+
 
 _debug = False # 'DEBUG' in os.environ
 if _debug:
@@ -57,7 +63,7 @@ def main():
     
     job = qb.jobobj()
     
-    print '# qbfutures: recieved job %d' % job['id']
+    log('recieved job %d' % job['id'])
     
     # We don't need the child to have the full agenda.
     job_for_child = dict(job)
@@ -70,7 +76,7 @@ def main():
         
         agenda = qb.requestwork()
         
-        print '# qbfutures: recieved work %r (%s)' % (agenda['name'], agenda['status'])
+        log('recieved work %r (%s)' % (agenda['name'], agenda['status']))
         sys.stdout.flush()
         
         # Be aware that we cannot unpack the agenda at this point since it may
@@ -84,24 +90,21 @@ def main():
             # 'complete' -> No more frames.
             # 'pending' -> Preempted, so bail out.
             # 'blocked' -> Perhaps item is part of a dependency.
-            print '# qbfutures: reporting job as %s' % agenda['status']
-            sys.stdout.flush()
+            log('reporting job as %s' % agenda['status'])
             qb.reportjob(agenda['status'])
-            print '# qbfutures: worker shutting down'
-            sys.stdout.flush()
+            log('worker shutting down')
             return
         
         # Waiting; relatively rare, try again shortly.
         elif agenda['status'] == 'waiting':
             timeout = 10 # seconds
-            print '# qbfutures: job %s is waiting for %ds' % (job['id'], timeout)
-            sys.stdout.flush()
+            log('job %s is waiting for %ds' % (job['id'], timeout))
             time.sleep(timeout)
             continue
         
         package_to_print = dict(agenda['package'])
         package_to_print.pop('__pickle__', None)
-        print '# qbfutures: work package:'
+        log('work package')
         pprint.pprint(package_to_print)
         print '# ---'
         
@@ -120,8 +123,7 @@ def main():
             '-m', 'qbfutures.worker',
             str(request_pipe[0]), str(response_pipe[1]),
         ))
-        print '# qbfutures: spawning child: %s' % subprocess.list2cmdline(cmd)
-        sys.stdout.flush()
+        log('spawning child: %s' % subprocess.list2cmdline(cmd))
         proc = subprocess.Popen(cmd, close_fds=False)
         
         # Close our end of the pipes so that there is only one process which
@@ -147,26 +149,24 @@ def main():
                 }
         
         # Wait for the child to finish.
-        print '# qbfutures: waiting for child...'
-        sys.stdout.flush()
+        log('waiting for child...')
         proc.wait()
         
         package.setdefault('status', 'failed')
         agenda['resultpackage'] = utils.pack(package)
         agenda['status'] = package['status']
         
-        print '# qbfutures: work resultpackage:'
+        log('work resultpackage')
         pprint.pprint(package)
         print '# ---'
         
         if agenda['status'] == 'failed':
-            print '# qbfutures: os.environ:'
+            log('os.environ')
             for k, v in sorted(os.environ.iteritems()):
                 print '#  %s = %r' % (k, v)
             print '# ---'
 
-        print '# qbfutures: reporting work as %s' % agenda['status']
-        sys.stdout.flush()
+        log('reporting work as %s' % agenda['status'])
         
         qb.reportwork(agenda)
 
@@ -192,7 +192,7 @@ def execute():
         # Run any requested preflight functions.
         preflight = package.get('preflight')
         if preflight:
-            print '# qbfutures: running preflight %s' % utils.get_func_name(package['preflight'])
+            log('running preflight %s' % utils.get_func_name(package['preflight']))
             sys.stdout.flush()
             preflight = utils.get_func(preflight)
             preflight(package)
@@ -208,7 +208,7 @@ def execute():
         
         # Print out what we are doing.
         arg_spec = ', '.join([repr(x) for x in args] + ['%s=%r' % x for x in sorted(kwargs.iteritems())])
-        print '# qbfutures: calling %s(%s)' % (func_str, arg_spec)
+        log('calling %s(%s)' % (func_str, arg_spec))
         sys.stdout.flush()
         
         result_package = {
@@ -225,7 +225,7 @@ def execute():
     
     finally:
         
-        print '# qbfutures: child reporting to worker'
+        log('child reporting to worker')
         sys.stdout.flush()
         
         # Send the results to the child.
@@ -234,7 +234,7 @@ def execute():
         request_fh.close()
         response_fh.close()
         
-        print '# qbfutures: child shutting down'
+        log('child shutting down')
         sys.stdout.flush()
         
     # print 'DONE child'
