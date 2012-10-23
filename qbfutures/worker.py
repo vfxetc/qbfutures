@@ -57,6 +57,8 @@ def main():
     
     job = qb.jobobj()
     
+    print '# qbfutures: recieved job %d' % job['id']
+    
     # We don't need the child to have the full agenda.
     job_for_child = dict(job)
     job_for_child.pop('agenda', None)
@@ -67,6 +69,9 @@ def main():
     while True:
         
         agenda = qb.requestwork()
+        
+        print '# qbfutures: recieved work %r (%s)' % (agenda['name'], agenda['status'])
+        sys.stdout.flush()
         
         # Be aware that we cannot unpack the agenda at this point since it may
         # reply upon the child's environment in order to function.
@@ -79,6 +84,8 @@ def main():
             # 'complete' -> No more frames.
             # 'pending' -> Preempted, so bail out.
             # 'blocked' -> Perhaps item is part of a dependency.
+            print '# qbfutures: reporting job as %s' % agenda['status']
+            sys.stdout.flush()
             qb.reportjob(agenda['status'])
             return
         
@@ -86,12 +93,13 @@ def main():
         elif agenda['status'] == 'waiting':
             timeout = 10 # seconds
             print '# qbfutures: job %s is waiting for %ds' % (job['id'], timeout)
+            sys.stdout.flush()
             time.sleep(timeout)
             continue
         
         package_to_print = dict(agenda['package'])
         package_to_print.pop('__pickle__', None)
-        print '# qbfutures: package:'
+        print '# qbfutures: work package:'
         pprint.pprint(package_to_print)
         print '# ---'
         
@@ -130,12 +138,15 @@ def main():
                 package = pickle.load(response_fh)
             except Exception as e:
                 traceback.print_exc()
+                sys.stderr.flush()
                 package = {
                     'status': 'failed',
                     'exception': e,
                 }
         
         # Wait for the child to finish.
+        print '# qbfutures: waiting for child...'
+        sys.stdout.flush()
         proc.wait()
         
         package.setdefault('status', 'failed')
@@ -151,6 +162,9 @@ def main():
             for k, v in sorted(os.environ.iteritems()):
                 print '#  %s = %r' % (k, v)
             print '# ---'
+
+        print '# qbfutures: reporting work as %s' % agenda['status']
+        sys.stdout.flush()
         
         qb.reportwork(agenda)
 
@@ -177,6 +191,7 @@ def execute():
         preflight = package.get('preflight')
         if preflight:
             print '# qbfutures: running preflight %s' % utils.get_func_name(package['preflight'])
+            sys.stdout.flush()
             preflight = utils.get_func(preflight)
             preflight(package)
         
@@ -192,6 +207,7 @@ def execute():
         # Print out what we are doing.
         arg_spec = ', '.join([repr(x) for x in args] + ['%s=%r' % x for x in sorted(kwargs.iteritems())])
         print '# qbfutures: calling %s(%s)' % (func_str, arg_spec)
+        sys.stdout.flush()
         
         result_package = {
             'result': func(*args, **kwargs),
@@ -206,13 +222,19 @@ def execute():
         }
     
     finally:
-
+        
+        print '# qbfutures: child reporting to worker'
+        sys.stdout.flush()
+        
         # Send the results to the child.
         pickle.dump(result_package, response_fh, -1)
-
+        
         request_fh.close()
         response_fh.close()
-    
+        
+        print '# qbfutures: child shutting down'
+        sys.stdout.flush()
+        
     # print 'DONE child'
 
 
