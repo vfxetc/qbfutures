@@ -67,7 +67,10 @@ def main():
     while True:
         
         agenda = qb.requestwork()
-
+        
+        # Be aware that we cannot unpack the agenda at this point since it may
+        # reply upon the child's environment in order to function.
+        
         # Handle finished states. When a job is complete Qube will continue to
         # hand us agendas, but they will have a status that indicates that we
         # cannot work on them. So we report that as the final job status and
@@ -86,9 +89,6 @@ def main():
             time.sleep(timeout)
             continue
         
-        # Get the package.
-        package = utils.unpack(agenda['package'])
-        
         # Prepare some pipes for communicating with the subprocess.
         request_pipe = os.pipe()
         response_pipe = os.pipe()
@@ -100,7 +100,7 @@ def main():
         if 'KS_DEV_ARGS' in os.environ:
             cmd.extend(('dev', '--bootstrap'))
         cmd.extend((
-            package.get('interpreter', 'python'),
+            agenda['package'].get('interpreter', 'python'),
             '-m', 'qbfutures.worker',
             str(request_pipe[0]), str(response_pipe[1]),
         ))
@@ -115,7 +115,7 @@ def main():
         # Send the job and agenda package to the child.
         with os.fdopen(request_pipe[1], 'w') as request_fh:
             pickle.dump(job_for_child, request_fh, -1)
-            pickle.dump(package, request_fh, -1)
+            pickle.dump(agenda['package'], request_fh, -1)
         
         # Get the response from the child.
         with os.fdopen(response_pipe[0], 'r') as response_fh:
@@ -160,7 +160,9 @@ def execute():
     
     try:
         
-        # Get the job/agenda from the parent.
+        # Get the job/agenda package from the parent, but we cannot unpack it
+        # yet since the preflight may be required in order to setup the
+        # environment in which it can function.
         job = pickle.load(request_fh)
         package = pickle.load(request_fh)
         
@@ -170,6 +172,9 @@ def execute():
             print '#qbfutures: running preflight %s' % utils.get_func_name(package['preflight'])
             preflight = utils.get_func(preflight)
             preflight(package)
+        
+        # Finally, unpack it.
+        package = utils.unpack(package)
         
         # Assemble the command to execute
         func = utils.get_func(package['func'])
