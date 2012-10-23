@@ -111,12 +111,12 @@ Qube must also have access to the custom jobtype; either the ``qbfutures`` type 
 Special Considerations
 ----------------------
 
-Unlike threads, callables and their arguments must be serialized (via :mod:`pickle`) to be passed to the Qube workers. This places some restrictions upon what can be used. A non-exhaustive list of rules include:
+Unlike when using ``threading``, callables and their arguments must be serialized (via :mod:`pickle`) to be passed to the Qube workers. This places some restrictions upon what can be used. A non-exhaustive list of rules include:
 
-- Callables (functions or classes) must be within the global scope of a module.
-- Callables must be uniquely named within that module.
-- A callable's module must have a ``__name__`` that is not importable.
-- Lambdas are not permissable (since they cannot be pickled).
+- callables (functions or classes) must be within the global scope of a module;
+- aallables must be uniquely named within that module;
+- a callable's module must have a ``__name__`` that is not importable;
+- lambdas are not permissable (since they cannot be pickled).
 
 
 Within ``__main__``
