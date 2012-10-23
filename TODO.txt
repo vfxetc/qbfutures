@@ -14,8 +14,13 @@
       to update subobjects (e.g. `env`) in place.
 
 - `from maya import cmds` somewhere is failing
+    - Install a different exception handler when on the farm that increases the
+      exception detail in the Maya console so that we get a full traceback.
 
-- Mark's stuff is causing core dumps after it is done
+- Mark's stuff is causing memory map dumps when it is done.
+    - After the job ran
+    - On both Fedora 11 and 14
+
 - Remove things that qube can't pickle from the package to avoid the error:
     "unrecognized object encountered during conversion."
     - just replace them with 'PICKLED:%r'

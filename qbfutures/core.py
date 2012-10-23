@@ -160,11 +160,11 @@ class Executor(_base.Executor):
                 job['env'][name] = os.environ[name]
         
         # Make sure the recursion depth isn't too high.
-        depth = int(os.environ.get('QBLVL', 0)) + 1
+        depth = int(os.environ.get('QBLVL', 0))
         limit = int(os.environ.get('QBFUTURES_RECURSION_LIMIT', 4))
         if depth > limit:
             raise RuntimeError('Qube recursion reached limit of %s' % limit)
-        job['env']['QBLVL'] = str(depth)
+        job['env']['QBLVL'] = str(depth + 1)
         
         job['agenda'] = []
         job['package'] = {}
