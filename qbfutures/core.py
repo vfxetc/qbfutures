@@ -21,9 +21,15 @@ del poller
 
 class Future(_base.Future):
     
+    """A Future representing a unit of work on Qube."""
+    
     def __init__(self, job_id, work_id):
         super(Future, self).__init__()
+        
+        #: The Qube job ID.
         self.job_id = job_id
+        
+        #: The index of this work item into the job's agenda.
         self.work_id = work_id
     
     def __repr__(self):
@@ -33,8 +39,9 @@ class Future(_base.Future):
         return res
     
     def status(self):
+        """Get the current status for this particular work item."""
         job = qb.jobinfo(id=[self.job_id])
-        return job[0]['agendastatus']
+        return job[0]['agenda'][self.work_id]['status']
 
 
 class BatchFuture(Future):
@@ -45,16 +52,29 @@ class BatchFuture(Future):
 
 
 class Batch(object):
-
+    
+    """Pseudo-executor that submits callables into a single Qube job.
+    
+    Be careful not to use any of the resulting futures until the jobs have been
+    submitted, either by using the ``Batch`` as a context manager, or calling
+    :func:`~qbfutures.core.Batch.commit`.
+    
+    """
+    
     def __init__(self, executor, job):
         self.executor = executor
         self.job = job
         self.futures = []
     
     def submit(self, func, *args, **kwargs):
+        """Same as :func:`Executor.submit <qbfutures.Executor.submit>`"""
         return self.submit_ext(func, args, kwargs)
     
     def submit_ext(self, func, args=None, kwargs=None, **extra):
+        """Same as :meth:`Executor.submit_ext <qbfutures.Executor.submit_ext>`,
+        except extra keyword arguments are passed to the ``qb.Work``.
+        
+        """
         work = qb.Work()
         work['name'] = extra.get('name',
             '%d: %s' % (len(self.futures) + 1, utils.get_func_name(func))
@@ -65,6 +85,10 @@ class Batch(object):
         return future
     
     def map(self, func, *iterables, **extra):
+        """Same as :meth:`Executor.map <qbfutures.Executor.map>`,
+        except extra keyword arguments are passed to the ``qb.Work``.
+        
+        """
         futures = []
         for i, args in enumerate(zip(*iterables)):
             
@@ -87,6 +111,8 @@ class Batch(object):
             self.commit()
     
     def commit(self):
+        """Perform the actual job submittion. Called automatically if used as
+        a context manager."""
         self.job['agenda'] = [future.work for future in self.futures]
         submitted = qb.submit([self.job])
         assert len(submitted) == 1
@@ -100,14 +126,16 @@ class Batch(object):
 
 class Executor(_base.Executor):
     
+    """An object which provides methods to execute functions asynchonously on Qube.
+    
+    Any keyword arguments passed to the constructor are used as a template for
+    every job submitted to Qube.
+    
+    """
+    
     def __init__(self, **kwargs):
         super(Executor, self).__init__()
         self.defaults = kwargs
-    
-    def batch(self, name='QBFutures Batch', **kwargs):
-        kwargs['name'] = name
-        job = self._base_job(None, **kwargs)
-        return Batch(self, job)
         
     def _base_job(self, func, **kwargs):
         
@@ -157,9 +185,24 @@ class Executor(_base.Executor):
         return futures
         
     def submit(self, func, *args, **kwargs):
+        """Schedules the given callable to be executed as ``func(*args, **kwargs)``.
+
+        :returns: The :class:`~qbfutures.Future` linked to the submitted job.
+        
+        """
         return self.submit_ext(func, args, kwargs)
         
     def submit_ext(self, func, args=None, kwargs=None, **extra):
+        """Extended submission with more control over Qube job.
+        
+        :param func: The function to call.
+        :param list args: The positional arguments to call with.
+        :param dict kwargs: The keyword arguments to call with.
+        :param **extra: Values to pass through to the ``qb.Job``.
+        :returns: The :class:`~qbfutures.Future` linked to the submitted job.
+        
+        """
+        
         job = self._base_job(func, **extra)
         work = qb.Work()
         package = self._base_work_package(func, args, kwargs, extra)
@@ -169,6 +212,17 @@ class Executor(_base.Executor):
         return self._submit(job)[0]
     
     def map(self, func, *iterables, **extra):
+        """Equivalent to ``map(func, *iterables)`` except ``func`` is executed
+        asynchronously on Qube.
+        
+        :param timeout: The number of seconds to wait for results, or ``None``.
+        
+        Any other keyword arguments will be passed through to the ``qb.Job``::
+        
+            >>> for result in Executor().map(my_function, range(10), cpus=4):
+            ...     print result
+        
+        """
         
         job = self._base_job(func, **extra)
         
@@ -194,6 +248,25 @@ class Executor(_base.Executor):
         finally:
             for future in futures:
                 future.cancel()
+    
+    def batch(self, name='QBFutures Batch', **kwargs):
+        """Start a batch process.
+        
+        :param str name: The name of the Qube job.
+        :param \**kwargs: Other parameters for the Qube job.
+        :returns: The :class:`~qbfutures.core.Batch` to use to schedule jobs in a batch.
+        
+        ::
+            >>> with Executor().batch() as batch:
+            ...     f1 = batch.submit(first_function)
+            ...     f2 = batch.submit(second_function)
+            ...
+            >>> print f1.results()
+        
+        """
+        kwargs['name'] = name
+        job = self._base_job(None, **kwargs)
+        return Batch(self, job)
 
 
 

@@ -28,6 +28,9 @@
     see 27180
 
 - Maya environment not being setup properly
+    python-bin[18954]: segfault at 0 ip 00007fb750f96724 sp 00007fff2a387b90 error 4 in libCommandEngine.so[7fb750f36000+ed000]
+    ---
+    
     got work: 27178:ric/3D/sourceimages/specialChannels/v0001/generic_head_specialC04_v0001.tif - running
     Failed to execute userSetup.py
     Traceback (most recent call last):

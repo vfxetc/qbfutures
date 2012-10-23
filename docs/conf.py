@@ -251,6 +251,8 @@ texinfo_documents = [
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
 
+autodoc_member_order = 'bysource'
+
 todo_include_todos = True
 
 intersphinx_mapping = {
