@@ -103,7 +103,8 @@ def main():
             package.get('interpreter', 'python'),
             '-m', 'qbfutures.worker',
             str(request_pipe[0]), str(response_pipe[1]),
-        ))    
+        ))
+        print '# qbfutures: spawning child: %s' % subprocess.list2cmdline(cmd)
         proc = subprocess.Popen(cmd, close_fds=False)
         
         # Close our end of the pipes so that there is only one process which
@@ -130,14 +131,19 @@ def main():
         # Wait for the child to finish.
         proc.wait()
         
-        print '# qbfutures: RESULT'
+        package.setdefault('status', 'failed')
+        agenda['resultpackage'] = utils.pack(package)
+        agenda['status'] = package['status']
+        
+        print '# qbfutures: work resultpackage:'
         pprint.pprint(package)
         print '# ---'
         
-        agenda['resultpackage'] = utils.pack(package)
-        agenda['status'] = package.get('status', 'failed')
-        
-        # print 'AGENDA: %r' % agenda['resultpackage']
+        if agenda['status'] == 'failed':
+            print '# qbfutures: os.environ:'
+            for k, v in sorted(os.environ.iteritems()):
+                print '#  %s = %r' % (k, v)
+            print '# ---'
         
         qb.reportwork(agenda)
 
