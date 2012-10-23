@@ -2,7 +2,8 @@ import os
 
 # Just to trick it into importing fir ReadTheDocs.
 if os.environ.get('READTHEDOCS', None) == 'True':
-    import sys.modules['qb'] = sys.modules[__name__]
+    import sys
+    sys.modules['qb'] = sys.modules[__name__]
 
 from core import Executor, Future
 
