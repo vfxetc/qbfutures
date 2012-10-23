@@ -89,6 +89,12 @@ def main():
             time.sleep(timeout)
             continue
         
+        package_to_print = dict(agenda['package'])
+        package_to_print.pop('__pickle__', None)
+        print '# qbfutures: package:'
+        pprint.pprint(package_to_print)
+        print '# ---'
+        
         # Prepare some pipes for communicating with the subprocess.
         request_pipe = os.pipe()
         response_pipe = os.pipe()
