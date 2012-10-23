@@ -1,15 +1,11 @@
 import time
-import os
-
-raise ValueError()
-
-from concurrent.futures import as_completed
 
 from .. import core
 
 
 def delay():
     time.sleep(1)
+
 
 if __name__ == '__main__':
 

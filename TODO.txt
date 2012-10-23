@@ -2,6 +2,7 @@
     - installing the custom types
     - weakrefs
     - recursion
+    - string entrypoints instead of callables
 
 - Job to print out environment of every machine on the farm
 

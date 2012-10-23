@@ -50,7 +50,6 @@ class Poller(threading.Thread):
             # slightly longer each time, but given the nature of qube a 2x
             # increase in delay leads us to log waits too quickly.
             self.delay = min(self.delay * 1.15, self.MAX_DELAY)
-            print 'WAITING FOR', self.delay
             self.loop_event.wait(self.delay)
             if self.loop_event.is_set():
                 self.loop_event.clear()

@@ -1,10 +1,11 @@
-import threading
-import os
-import socket
-import cPickle as pickle
-import time
 import atexit
+import cPickle as pickle
+import itertools
+import os
 import Queue as queue
+import socket
+import threading
+import time
 
 from concurrent.futures import _base
 
@@ -133,6 +134,8 @@ class Executor(_base.Executor):
     
     """
     
+    environ_passthroughs = ['KS_DEV_ARGS']
+    
     def __init__(self, **kwargs):
         super(Executor, self).__init__()
         self.defaults = kwargs
@@ -145,11 +148,23 @@ class Executor(_base.Executor):
         job.setdefault('prototype', 'qbfutures')
         job.setdefault('name', 'QBFutures: %s' % utils.get_func_name(func))
         
-        # Make sure this is a clean copy.
+        # Make sure this is a clean dict.
         job['env'] = dict(job.get('env') or {})
+        
+        # For bootstrapping development of this package.
         job['env']['QBFUTURES_PATH'] = os.path.abspath(os.path.join(__file__, '..', '..'))
-        if 'KS_DEV_ARGS' in os.environ:
-            job['env']['KS_DEV_ARGS'] = os.environ['KS_DEV_ARGS']
+        
+        # Passthrough select environment variables.
+        for name in itertools.chain(self.environ_passthroughs, ('QBFUTURES_RECURSION_LIMIT', )):
+            if name in os.environ:
+                job['env'][name] = os.environ[name]
+        
+        # Make sure the recursion depth isn't too high.
+        depth = int(os.environ.get('QBLVL', 0)) + 1
+        limit = int(os.environ.get('QBFUTURES_RECURSION_LIMIT', 4))
+        if depth > limit:
+            raise RuntimeError('Qube recursion reached limit of %s' % limit)
+        job['env']['QBLVL'] = str(depth)
         
         job['agenda'] = []
         job['package'] = {}
