@@ -25,8 +25,6 @@ class Poller(threading.Thread):
         self.loop_event = threading.Event()
         self.started = False
         self.running = True
-
-        atexit.register(self.shutdown)
     
     def add(self, future):
         self.new_futures.put(future)
@@ -37,6 +35,7 @@ class Poller(threading.Thread):
         if not self.started:
             self.started = True
             self.start()
+            atexit.register(self.shutdown)
     
     def shutdown(self):
         self.running = False
