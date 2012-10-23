@@ -85,7 +85,7 @@ def main():
         # Waiting; relatively rare, try again shortly.
         elif agenda['status'] == 'waiting':
             timeout = 10 # seconds
-            print '# qbfutures: Job %s is waiting for %ds' % (job['id'], timeout)
+            print '# qbfutures: job %s is waiting for %ds' % (job['id'], timeout)
             time.sleep(timeout)
             continue
         
@@ -111,6 +111,7 @@ def main():
             str(request_pipe[0]), str(response_pipe[1]),
         ))
         print '# qbfutures: spawning child: %s' % subprocess.list2cmdline(cmd)
+        sys.stdout.flush()
         proc = subprocess.Popen(cmd, close_fds=False)
         
         # Close our end of the pipes so that there is only one process which
@@ -175,7 +176,7 @@ def execute():
         # Run any requested preflight functions.
         preflight = package.get('preflight')
         if preflight:
-            print '#qbfutures: running preflight %s' % utils.get_func_name(package['preflight'])
+            print '# qbfutures: running preflight %s' % utils.get_func_name(package['preflight'])
             preflight = utils.get_func(preflight)
             preflight(package)
         

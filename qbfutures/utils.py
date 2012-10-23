@@ -30,14 +30,17 @@ def get_func_name(spec):
 def _clean_for_pack(x):
     if x is None:
         return x
-    if isinstance(x, (int, float, basestring, bool)):
+    if isinstance(x, (int, float, str, bool)):
         return x
+    if isinstance(x, unicode):
+        return x.encode('utf8')
     if isinstance(x, (list, tuple, set)):
         return type(x)(_clean_for_pack(v) for v in x)
     if isinstance(x, dict):
         return type(x)((k, _clean_for_pack(v)) for k, v in x.iteritems())
-    return '<< %r >>' % x
-    
+    return '<<%r>>' % x
+
+
 def pack(package):
     package = dict(package)
     package.pop('__pickle__', None)

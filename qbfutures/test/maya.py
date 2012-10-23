@@ -12,6 +12,7 @@ def get_type(node):
 
 
 def submit():
+    from maya import cmds
     executor = Executor(clone_environ=True, create_tempfile=True)
     with executor.batch("QBFutures Example: Get Node Types") as batch:
         for node in cmds.ls(sl=True):

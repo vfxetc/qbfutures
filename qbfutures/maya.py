@@ -82,7 +82,7 @@ class Executor(core.Executor):
                 datetime.datetime.utcnow().strftime('%y%m%d.%H%M%S.%f'),
                 base_ext,
             ))
-            print '# qbfutures tempfile:', repr(self.filename)
+            # print '# qbfutures tempfile:', self.filename
         
         # Create the directory.
         dir_path = os.path.dirname(self.filename)
@@ -123,5 +123,9 @@ class Executor(core.Executor):
         package['filename'] = extra.get('filename', self.filename)
         package['workspace'] = extra.get('workspace', self.workspace)
         package['version'] = extra.get('version', self.version)
+        
+        # print '# qbfutures filename:', package['filename']
+        # print '# qbfutures workspace:', package['workspace']
+        # print '# qbfutures version:', package['version']
         
         return package
