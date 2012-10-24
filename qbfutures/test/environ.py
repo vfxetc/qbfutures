@@ -14,10 +14,10 @@ def dump_environ():
 
 if __name__ == '__main__':
     
-    from .. import submit_ext
-    future = submit_ext('qbfutures.test.environ:dump_environ', name="QBFutures Python Environment Test", priority=8000)
-    print 'python', future.job_id
+    # from .. import submit_ext
+    # future = submit_ext('qbfutures.test.environ:dump_environ', name="QBFutures Python Environment Test", priority=8000)
+    # print 'python', future.job_id
     
     from ..maya import Executor
-    future = Executor().submit_ext('qbfutures.test.environ:dump_environ', name='QBFutures Maya Environment Test', priority=8000)
+    future = Executor().submit_ext('qbfutures.test.environ:dump_environ', name='QBFutures Maya Environment Test', priority=8000, requirements='host.os = "osx"')
     print 'maya', future.job_id

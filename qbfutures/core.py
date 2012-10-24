@@ -6,9 +6,19 @@ import Queue as queue
 import socket
 import threading
 import time
+import sys
 
-from concurrent.futures import _base
-
+try:
+    from concurrent.futures import _base
+except ImportError:
+    print 'COULD NOT FIND CONCURRENT.FUTURES'
+    for x in sorted(os.environ.iteritems()):
+        print '%s = %s' % x
+    print
+    print '\n'.join(sys.path)
+    print
+    raise
+    
 import qb
 
 from . import utils
