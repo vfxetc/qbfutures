@@ -157,6 +157,7 @@ class Executor(_base.Executor):
         
         job.setdefault('prototype', 'qbfutures')
         job.setdefault('name', 'QBFutures: %s' % utils.get_func_name(func))
+        job['name'] = str(job['name'])
         
         # Make sure this is a clean dict.
         job['env'] = dict(job.get('env') or {})
@@ -233,7 +234,7 @@ class Executor(_base.Executor):
         job = self._base_job(func, **extra)
         work = qb.Work()
         package = self._base_work_package(func, args, kwargs, extra)
-        work['name'] = package.pop('name', '1')
+        work['name'] = str(package.pop('name', '1'))
         work['package'] = utils.pack(package)
         job['agenda'] = [work]
         return self._submit(job)[0]
