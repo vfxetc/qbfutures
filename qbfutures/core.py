@@ -196,9 +196,6 @@ class Executor(_base.Executor):
             if attr in extra:
                 package[attr] = extra[attr]
         
-        if 'name' not in package:
-            package['name'] = 'QBFutures: %s' % func
-        
         return package
     
     def _submit(self, job):
