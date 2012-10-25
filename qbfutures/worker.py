@@ -226,7 +226,6 @@ def execute():
     finally:
         
         log('child reporting to worker')
-        sys.stdout.flush()
         
         # Send the results to the child.
         pickle.dump(result_package, response_fh, -1)
@@ -235,9 +234,7 @@ def execute():
         response_fh.close()
         
         log('child shutting down')
-        sys.stdout.flush()
-        
-    # print 'DONE child'
+        exit(0)
 
 
 if __name__ == '__main__':

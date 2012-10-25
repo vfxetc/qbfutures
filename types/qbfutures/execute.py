@@ -12,3 +12,4 @@ if 'QBFUTURES_DIR' in os.environ:
 
 from qbfutures.worker import main
 main()
+
