@@ -196,6 +196,9 @@ class Executor(_base.Executor):
             if attr in extra:
                 package[attr] = extra[attr]
         
+        if 'name' not in package:
+            package['name'] = 'QBFutures: %s' % func
+        
         return package
     
     def _submit(self, job):
@@ -276,7 +279,7 @@ class Executor(_base.Executor):
             for future in futures:
                 future.cancel()
     
-    def batch(self, name='QBFutures Batch', **kwargs):
+    def batch(self, name=None, **kwargs):
         """Start a batch process.
         
         :param str name: The name of the Qube job.
@@ -291,7 +294,8 @@ class Executor(_base.Executor):
             >>> print f1.results()
         
         """
-        kwargs['name'] = name
+        if name is not None:
+            kwargs['name'] = name
         job = self._base_job(None, **kwargs)
         return Batch(self, job)
 
