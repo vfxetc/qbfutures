@@ -7,6 +7,8 @@ import qb
 
 from . import utils
 
+__also_reload = ['.utils']
+
 
 class Poller(threading.Thread):
     

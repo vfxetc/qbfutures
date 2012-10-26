@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import cPickle as pickle
 import datetime
 import fcntl
@@ -149,7 +151,7 @@ def main():
                 }
         
         # Wait for the child to finish.
-        log('waiting for child...')
+        # log('waiting for child...')
         proc.wait()
         
         package.setdefault('status', 'failed')
@@ -225,7 +227,7 @@ def execute():
     
     finally:
         
-        log('child reporting to worker')
+        # log('child reporting to worker')
         
         # Send the results to the child.
         pickle.dump(result_package, response_fh, -1)
@@ -234,7 +236,7 @@ def execute():
         response_fh.close()
         
         log('child shutting down')
-        exit(0)
+        # exit(0)
 
 
 if __name__ == '__main__':

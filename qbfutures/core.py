@@ -24,6 +24,8 @@ import qb
 from . import utils
 from . import poller
 
+__also_reload = ['.utils', '.poller']
+
 
 # Create one poller.
 _poller = poller.Poller()
