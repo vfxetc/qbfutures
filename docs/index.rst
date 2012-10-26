@@ -146,6 +146,14 @@ A ``QBLVL`` variable has been placed into the execution environment to track how
 The recusion limit may be increased by setting a ``QBFUTURES_RECURSION_LIMIT`` variable in the environment.
 
 
+Shutdown
+^^^^^^^^
+
+For various reasons, we have to forcibly shutdown the Python process. We do our best to clean up as much as we can (by triggering ``atexit``, clearing all modules, and running the garbage collector), but we cannot guarantee that your destructors will be called in the same way as a normal process.
+
+Be mindful to cleanup all resources.
+
+
 Indices and tables
 ------------------
 * :ref:`genindex`
