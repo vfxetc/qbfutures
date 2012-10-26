@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 import traceback
+import gc
 
 import qb
 
@@ -225,18 +226,32 @@ def execute():
             'status': 'failed',
         }
     
-    finally:
         
-        # log('child reporting to worker')
         
-        # Send the results to the child.
-        pickle.dump(result_package, response_fh, -1)
+    # Send the results to the child.
+    pickle.dump(result_package, response_fh, -1)
         
-        request_fh.close()
-        response_fh.close()
+    request_fh.close()
+    response_fh.close()
         
-        log('child shutting down')
-        # exit(0)
+    log('child shutting down')
+        
+    # We are going to make a best effort to clean up Python, but we can't
+    # let it go through its normal process.
+    
+    # Run atexit.
+    if hasattr(sys, "exitfunc"):
+        sys.exitfunc()
+    
+    # Pop all the modules.
+    for name in sys.modules.keys():
+        if name != '__builtin__':
+            sys.modules.pop(name)
+    
+    # Collect the highest generation that we can.
+    gc.collect(2)
+    
+    os._exit(0)
 
 
 
