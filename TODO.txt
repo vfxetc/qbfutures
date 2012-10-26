@@ -10,18 +10,6 @@
     - Only promise to update them in place, and not to remove stale things OR
       to update subobjects (e.g. `env`) in place.
 
-- `from maya import cmds` somewhere is failing
-    - Install a different exception handler when on the farm that increases the
-      exception detail in the Maya console so that we get a full traceback.
-
-- Mark's stuff is causing memory map dumps when it is done.
-    - After the job ran
-    - On both Fedora 11 and 14
-
-- Remove things that qube can't pickle from the package to avoid the error:
-    "unrecognized object encountered during conversion."
-    - just replace them with 'PICKLED:%r'
-
 - .core.Executor.submit_range('1-10', func, *args, **kwargs)
     - func recieves the frame as the first argument
 
@@ -30,21 +18,3 @@
         
 - match both the concurrent.futures API and the multiprocessing one
     - unordered_imap, etc.
-
-- Maya is segfaulting after running some things
-    see 27180
-
-- Maya environment not being setup properly
-    python-bin[18954]: segfault at 0 ip 00007fb750f96724 sp 00007fff2a387b90 error 4 in libCommandEngine.so[7fb750f36000+ed000]
-    ---
-    
-    got work: 27178:ric/3D/sourceimages/specialChannels/v0001/generic_head_specialC04_v0001.tif - running
-    Failed to execute userSetup.py
-    Traceback (most recent call last):
-      File "/home/mreid/key_local_tool_development/key_base/3d/maya/python/userSetup.py", line 8, in <module>
-        from ks.maya import tickets
-      File "/home/mreid/key_local_tool_development/key_base/python/ks.py", line 171, in load_module
-        return imp.load_module(self.namespaced_name, self.file, self.path, self.description)
-      File "/home/mreid/key_local_tool_development/key_base/3d/maya/python/tickets.py", line 11, in <module>
-        from PyQt4 import QtCore, QtGui
-    ImportError: No module named PyQt4
