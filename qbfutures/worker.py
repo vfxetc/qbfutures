@@ -122,7 +122,7 @@ def main():
             cmd.extend(('dev', '--bootstrap'))
         cmd.extend((
             agenda['package'].get('interpreter', 'python'),
-            '-m', 'qbfutures.worker',
+            '-m', 'qbfutures.sandbox.the_corner',
             str(request_pipe[0]), str(response_pipe[1]),
         ))
         log('spawning child: %s' % subprocess.list2cmdline(cmd))
@@ -238,8 +238,5 @@ def execute():
         log('child shutting down')
         # exit(0)
 
-
-if __name__ == '__main__':
-    execute()
 
 
