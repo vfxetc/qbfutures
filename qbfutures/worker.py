@@ -227,7 +227,8 @@ def execute():
         }
     
         
-        
+    log('child sending result_package')
+    
     # Send the results to the child.
     pickle.dump(result_package, response_fh, -1)
         
@@ -242,11 +243,6 @@ def execute():
     # Run atexit.
     if hasattr(sys, "exitfunc"):
         sys.exitfunc()
-    
-    # Pop all the modules.
-    for name in sys.modules.keys():
-        if name != '__builtin__':
-            sys.modules.pop(name)
     
     # Collect the highest generation that we can.
     gc.collect(2)
