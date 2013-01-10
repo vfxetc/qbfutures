@@ -1,9 +1,6 @@
 from __future__ import absolute_import
 
 import cPickle as pickle
-import datetime
-import fcntl
-import multiprocessing
 import os
 import pprint
 import subprocess
@@ -15,6 +12,10 @@ import gc
 import qb
 
 from . import utils
+
+
+# Silence pyflakes
+assert qb
 
 
 def log(msg):
@@ -189,7 +190,6 @@ def execute():
         # Get the job/agenda package from the parent, but we cannot unpack it
         # yet since the preflight may be required in order to setup the
         # environment in which it can function.
-        job = pickle.load(request_fh)
         package = pickle.load(request_fh)
         
         # Run any requested preflight functions.

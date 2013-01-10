@@ -52,7 +52,7 @@ class Poller(threading.Thread):
         try:
             while self.running:
                 self.polling_loop()
-        except Exception as e:
+        except Exception:
             self.exc_info = sys.exc_info()
             self.running = False
             for future in self.futures.values():

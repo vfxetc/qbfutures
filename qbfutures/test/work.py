@@ -1,5 +1,4 @@
 import sys
-import os
 
 def func(*args, **kwargs):
     return args
