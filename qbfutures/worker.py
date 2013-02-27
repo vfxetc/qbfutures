@@ -190,6 +190,7 @@ def execute():
         # Get the job/agenda package from the parent, but we cannot unpack it
         # yet since the preflight may be required in order to setup the
         # environment in which it can function.
+        job = pickle.load(request_fh)
         package = pickle.load(request_fh)
         
         # Run any requested preflight functions.
