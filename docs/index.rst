@@ -27,7 +27,7 @@ Keyword arguments can also be passed to :meth:`Executor.map <qbfutures.Executor.
 Finally, keyword arguments to the :class:`~qbfutures.Executor` constructor will be used as defaults on all submitted jobs::
 
 
-    >>> executor = Executor(cpus=4, group='farm')
+    >>> executor = Executor(cpus=4, groups='farm')
     >>> # Submit some jobs, and they will take on the cpus and group above.
 
 
@@ -47,11 +47,12 @@ Often, logical jobs will be spread into multiple chunks of work. If those are pr
 
 While batch methods will return a :class:`~qbfutures.Future`, they will not be in a valid
 state until the batch has been submitted. They will not have job or work IDs,
-and iterating over a :func:`~Batch.map` result is undefined.
+and iterating over a :func:`Batch.map <qbfutures.core.Batch.map>` result is undefined.
 
 Since jobs submited via a batch are individual work items, extra keyword
-arguments to either :func:`Batch.submit_ext` or :func:`Batch.map` will be
-passed through to the ``qb.Work``.
+arguments to either :func:`Batch.submit_ext <qbfutures.core.Batch.submit_ext>`
+or :func:`Batch.map <qbfutures.core.Batch.map>` will be passed through to the
+``qb.Work``.
 
 
 Maya
