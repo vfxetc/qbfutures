@@ -1,4 +1,5 @@
 import re
+import sys
 from optparse import OptionParser
 
 from .core import Executor
@@ -29,6 +30,9 @@ def main():
     opts, args = opt_parser.parse_args()
 
     src = ' '.join(args)
+    if src == '-':
+        src = sys.stdin.read()
+
     executor = Executor(cpus=opts.cpus, name=opts.name or src)
 
     if re.match(r'^\w+(\.\w+)*:\w+', src):
