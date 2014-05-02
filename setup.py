@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup, find_packages
 
 setup(
     name='qbfutures',
@@ -6,7 +6,7 @@ setup(
     description='`concurrent.futures` for Qube.',
     url='http://github.com/westernx/qbfutures',
     
-    packages=['qbfutures'],
+    packages=find_packages(exclude=['build*', 'tests*']),
     
     author='Mike Boers',
     author_email='qbfutures@mikeboers.com',
