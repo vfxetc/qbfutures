@@ -3,4 +3,6 @@
 ._*
 *~
 
+# Build products.
 /docs/_build
+/*.egg-info
