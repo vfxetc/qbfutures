@@ -120,7 +120,9 @@ def main():
         # We are calling this module, which will end up calling the
         # :func:`execute` function.
         cmd = []
-        if 'KS_DEV_ARGS' in os.environ:
+        if 'VEE_EXEC_ARGS' in os.environ or 'KS_DEV_ARGS' in os.environ:
+            # These both have a "dev" command with a "--bootstrap" which do
+            # the same thing.
             cmd.extend(('dev', '--bootstrap'))
         cmd.extend((
             agenda['package'].get('interpreter', 'python'),
