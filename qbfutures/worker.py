@@ -65,6 +65,8 @@ def main():
     
     """
     
+    log('using worker %s' % __file__)
+
     job = qb.jobobj()
     
     log('recieved job %d' % job['id'])

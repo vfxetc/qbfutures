@@ -1,3 +1,5 @@
+- types/qbfutures/execute.py detects the WesternX environment, and perhaps it shouldn't
+
 - Attach args and kwargs to futures?
 - Attach job and work to futures, and update them on every poll?
 
