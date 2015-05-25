@@ -141,7 +141,7 @@ class Executor(_base.Executor):
     
     """
     
-    environ_passthroughs = ['KS_DEV_ARGS']
+    environ_passthroughs = ['VEE_EXEC_ARGS', 'KS_DEV_ARGS']
     
     def __init__(self, **kwargs):
         super(Executor, self).__init__()
