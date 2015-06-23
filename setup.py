@@ -12,7 +12,7 @@ setup(
     author_email='qbfutures@mikeboers.com',
     license='BSD-3',
     
-    install_package_data=True,
+    include_package_data=True,
 
     classifiers=[
         'Intended Audience :: Developers',
