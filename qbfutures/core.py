@@ -73,6 +73,10 @@ class Batch(object):
         self.executor = executor
         self.job = job
         self.futures = []
+
+    @property
+    def job_id(self):
+        return self.job.job_id
     
     def submit(self, func, *args, **kwargs):
         """Same as :func:`Executor.submit <qbfutures.Executor.submit>`"""
@@ -121,6 +125,8 @@ class Batch(object):
     def commit(self):
         """Perform the actual job submittion. Called automatically if used as
         a context manager."""
+        if not self.futures:
+            return []
         self.job['agenda'] = [future.work for future in self.futures]
         submitted = qb.submit([self.job])
         assert len(submitted) == 1
