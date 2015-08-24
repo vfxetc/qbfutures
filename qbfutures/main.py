@@ -7,7 +7,7 @@ from .core import Executor
 
 def our_exec(src, imports):
     src = src.rstrip()
-    is_exec = '\n' in src
+    is_exec = '\n' in src or ';' in src
     src += '\n'
     namespace = {}
     for name in imports:
@@ -23,6 +23,7 @@ def main():
     opt_parser = OptionParser()
     opt_parser.add_option('-c', '--cpus', type='int', default=1)
     opt_parser.add_option('-n', '--name')
+    opt_parser.add_option('-u', '--user')
     opt_parser.add_option('-w', '--wait', action='store_true')
     opt_parser.add_option('-v', '--verbose', action='store_true')
     opt_parser.add_option('-r', '--repr', action='store_true')
@@ -35,10 +36,14 @@ def main():
 
     executor = Executor(cpus=opts.cpus, name=opts.name or src)
 
+    extra = {}
+    if opts.user:
+        extra['user'] = opts.user
+
     if re.match(r'^\w+(\.\w+)*:\w+', src):
-        future = executor.submit(src)
+        future = executor.submit_ext(src, **extra)
     else:
-        future = executor.submit('qbfutures.main:our_exec', src, imports=opts.imports)
+        future = executor.submit_ext('qbfutures.main:our_exec', [src], {'imports': opts.imports}, **extra)
 
     if opts.verbose:
         print 'Job ID %d' % future.job_id
