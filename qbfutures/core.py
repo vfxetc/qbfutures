@@ -204,6 +204,19 @@ class Executor(_base.Executor):
     
     def _submit(self, job):
         
+        # Final chance for cleanup! Qube does not like None names.
+        try:
+            if job['user'] is None:
+                job.pop('user')
+        except KeyError:
+            pass
+
+        # Assign a default user from the environment.
+        try:
+            job.setdefault('user', os.environ['QBFUTURES_USER'])
+        except KeyError:
+            pass
+
         job_id = qb.submit([job])[0]['id']
         
         futures = []

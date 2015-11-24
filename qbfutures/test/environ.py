@@ -19,5 +19,5 @@ if __name__ == '__main__':
     # print 'python', future.job_id
     
     from ..maya import Executor
-    future = Executor().submit_ext('qbfutures.test.environ:dump_environ', name='QBFutures Maya Environment Test', priority=8000, requirements='host.os = "osx"')
+    future = Executor().submit_ext('qbfutures.test.environ:dump_environ', name='QBFutures Environment Test', priority=9000)
     print 'maya', future.job_id
