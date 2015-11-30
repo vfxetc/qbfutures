@@ -16,8 +16,8 @@ log('using type %s' % __file__)
 if 'KS_TOOLS' not in os.environ and 'VEE_EXEC_PREFIX' not in os.environ:
     if os.environ.get('QBFUTURES_BASH_DEPTH'):
         log('Environment STILL appears bare; continuing anyways.')
-    elif int(os.environ.get('SHLVL', 10)) < 3:
-        log('Too much bash recursion!')
+    elif int(os.environ.get('SHLVL', 0)) > 20:
+        log('Too much bash recursion; continuing anyways.')
     else:
         log('Environment appears bare; sourcing ~/.bashrc')
         os.environ['QBFUTURES_BASH_DEPTH'] = 1
