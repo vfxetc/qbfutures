@@ -20,7 +20,7 @@ if 'KS_TOOLS' not in os.environ and 'VEE_EXEC_PREFIX' not in os.environ:
         log('Too much bash recursion; continuing anyways.')
     else:
         log('Environment appears bare; sourcing ~/.bashrc')
-        os.environ['QBFUTURES_BASH_DEPTH'] = 1
+        os.environ['QBFUTURES_BASH_DEPTH'] = '1'
         os.execvpe('bash', ['bash', '-c', '. ~/.bashrc; python %s' % __file__], os.environ)
 
 
