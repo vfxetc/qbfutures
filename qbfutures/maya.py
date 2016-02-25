@@ -64,8 +64,7 @@ class Executor(core.Executor):
             self.create_tempfile()
         
         # Set a default.
-        self.version = self.version or 2011
-        
+        self.version = self.version or (int(maya_cmds.about(version=True)) if IN_MAYA else 2014)
     def create_tempfile(self):
         """Save the current file in a temporary location for Qube processes to use."""
         
